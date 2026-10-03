@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Groove</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header class="top-bar">
+        <div>
+            <h1>Groove</h1>
+            <p>Mini Music Studio</p>
+        </div>
+
+        <div class="transport">
+            <button id="playButton">Play</button>
+            <button id="recordButton">Record</button>
+            <button id="clearButton">Clear</button>
+        </div>
+    </header>
+
+    <main>
+
+        <section id="piano">
+            <div class="section-header">
+                <h2>Piano</h2>
+                <p>Play notes using your mouse or keyboard.</p>
+            </div>
+
+            <div class="piano">
+                <div class="white-key" data-note="C4">C</div>
+                <div class="white-key" data-note="D4">D</div>
+                <div class="white-key" data-note="E4">E</div>
+                <div class="white-key" data-note="F4">F</div>
+                <div class="white-key" data-note="G4">G</div>
+                <div class="white-key" data-note="A4">A</div>
+                <div class="white-key" data-note="B4">B</div>
+                <div class="white-key" data-note="C5">C</div>
+            </div>
+        </section>
+
+        <section id="drums">
+            <div class="section-header">
+                <h2>Drum Machine</h2>
+                <p>Create a simple 16-step rhythm.</p>
+            </div>
+
+            <div class="drum-machine">
+
+                <div class="drum-row">
+                    <span class="drum-name">Kick</span>
+
+                    <div class="steps">
+                        <button class="step" data-instrument="kick" data-step="1"></button>
+                        <button class="step" data-instrument="kick" data-step="2"></button>
+                        <button class="step" data-instrument="kick" data-step="3"></button>
+                        <button class="step" data-instrument="kick" data-step="4"></button>
+                        <button class="step" data-instrument="kick" data-step="5"></button>
+                        <button class="step" data-instrument="kick" data-step="6"></button>
+                        <button class="step" data-instrument="kick" data-step="7"></button>
+                        <button class="step" data-instrument="kick" data-step="8"></button>
+                    </div>
+                </div>
+
+                <div class="drum-row">
+                    <span class="drum-name">Snare</span>
+
+                    <div class="steps">
+                        <button class="step" data-instrument="snare" data-step="1"></button>
+                        <button class="step" data-instrument="snare" data-step="2"></button>
+                        <button class="step" data-instrument="snare" data-step="3"></button>
+                        <button class="step" data-instrument="snare" data-step="4"></button>
+                        <button class="step" data-instrument="snare" data-step="5"></button>
+                        <button class="step" data-instrument="snare" data-step="6"></button>
+                        <button class="step" data-instrument="snare" data-step="7"></button>
+                        <button class="step" data-instrument="snare" data-step="8"></button>
+                    </div>
+                </div>
+
+                <div class="drum-row">
+                    <span class="drum-name">Hi-Hat</span>
+
+                    <div class="steps">
+                        <button class="step" data-instrument="hihat" data-step="1"></button>
+                        <button class="step" data-instrument="hihat" data-step="2"></button>
+                        <button class="step" data-instrument="hihat" data-step="3"></button>
+                        <button class="step" data-instrument="hihat" data-step="4"></button>
+                        <button class="step" data-instrument="hihat" data-step="5"></button>
+                        <button class="step" data-instrument="hihat" data-step="6"></button>
+                        <button class="step" data-instrument="hihat" data-step="7"></button>
+                        <button class="step" data-instrument="hihat" data-step="8"></button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="controls">
+
+            <div class="section-header">
+                <h2>Controls</h2>
+                <p>Adjust the tempo and studio settings.</p>
+            </div>
+
+            <div class="control-panel">
+
+                <label for="bpm">BPM</label>
+
+                <input
+                    type="number"
+                    id="bpm"
+                    value="120"
+                    min="40"
+                    max="240"
+                >
+
+                <span id="bpmDisplay">120 BPM</span>
+
+                <button id="metronomeButton">
+                    Metronome
+                </button>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Groove Browser Music Studio</p>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
