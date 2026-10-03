@@ -6,8 +6,8 @@
 
 body {
     font-family: Arial, sans-serif;
-    background: #111;
-    color: #fff;
+    background: #0b0b0d;
+    color: #f5f5f5;
     min-height: 100vh;
 }
 
@@ -15,18 +15,26 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 40px;
-    background: #181818;
-    border-bottom: 1px solid #333;
+
+    padding: 22px 40px;
+
+    background: #151518;
+    border-bottom: 1px solid #29292e;
+
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .top-bar h1 {
     font-size: 32px;
+    letter-spacing: -1px;
 }
 
 .top-bar p {
-    color: #999;
-    margin-top: 4px;
+    color: #777;
+    margin-top: 5px;
+    font-size: 14px;
 }
 
 .transport {
@@ -36,146 +44,316 @@ body {
 
 button {
     border: none;
-    cursor: pointer;
     font: inherit;
+    cursor: pointer;
 }
 
 .transport button {
     padding: 10px 18px;
-    border-radius: 6px;
-    background: #292929;
+
+    border-radius: 7px;
+
+    background: #242428;
     color: white;
+
+    border: 1px solid #333338;
+
+    transition:
+        background 0.15s,
+        transform 0.15s;
 }
 
 .transport button:hover {
-    background: #3a3a3a;
+    background: #303036;
 }
+
+.transport button:active {
+    transform: scale(0.97);
+}
+
 
 main {
     width: min(1100px, 90%);
     margin: 40px auto;
 }
 
+
 section {
-    background: #181818;
-    border: 1px solid #292929;
-    border-radius: 12px;
-    padding: 24px;
+    background: #151518;
+
+    border: 1px solid #29292e;
+    border-radius: 14px;
+
+    padding: 26px;
+
     margin-bottom: 24px;
+
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
 .section-header {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .section-header h2 {
+    font-size: 21px;
     margin-bottom: 6px;
 }
 
 .section-header p {
-    color: #888;
+    color: #777;
+    font-size: 14px;
 }
 
 .piano {
     display: flex;
-    height: 220px;
+
+    width: 100%;
+    height: 240px;
+
+    border-radius: 8px;
+    overflow: hidden;
+
+    background: #050505;
+
+    border: 1px solid #333;
+
+    box-shadow:
+        0 12px 25px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .white-key {
     flex: 1;
-    background: #eee;
-    color: #111;
-    border: 1px solid #aaa;
+
+    position: relative;
+
+    background: linear-gradient(
+        to bottom,
+        #fafafa 0%,
+        #eeeeee 75%,
+        #d5d5d5 100%
+    );
+
+    color: #222;
+
+    border-right: 1px solid #aaa;
+
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    padding-bottom: 15px;
+
+    padding-bottom: 17px;
+
     cursor: pointer;
     user-select: none;
+
+    transition:
+        background 0.1s,
+        transform 0.08s;
+}
+
+.white-key:last-child {
+    border-right: none;
 }
 
 .white-key:hover {
-    background: #ddd;
+    background: linear-gradient(
+        to bottom,
+        #ffffff 0%,
+        #eeeeee 75%,
+        #dcdcdc 100%
+    );
 }
 
-.white-key:active {
-    background: #bbb;
+.white-key:active,
+.white-key.pressed {
+    background: #c7c7c7;
+    transform: translateY(4px);
 }
 
+.white-key::after {
+    content: attr(data-note);
+
+    position: absolute;
+    bottom: 5px;
+
+    font-size: 10px;
+    color: #888;
+}
 .drum-machine {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
 }
 
 .drum-row {
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 18px;
 }
 
 .drum-name {
     width: 70px;
-    color: #bbb;
+
+    color: #aaa;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .steps {
     display: grid;
+
     grid-template-columns: repeat(8, 1fr);
+
     gap: 8px;
+
     flex: 1;
 }
 
 .step {
-    height: 40px;
-    background: #292929;
-    border-radius: 5px;
+    height: 42px;
+
+    background: #222226;
+
+    border: 1px solid #303036;
+    border-radius: 6px;
+
+    transition:
+        background 0.15s,
+        transform 0.1s;
 }
 
 .step:hover {
-    background: #3a3a3a;
+    background: #303036;
+}
+
+.step:active {
+    transform: scale(0.94);
 }
 
 .step.active {
-    background: #fff;
+    background: #f5f5f5;
+    border-color: #fff;
 }
 
 .control-panel {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
+
+    padding: 16px;
+
+    background: #101013;
+
+    border: 1px solid #29292e;
+    border-radius: 9px;
 }
 
 .control-panel label {
     color: #aaa;
+    font-size: 14px;
 }
 
 .control-panel input {
     width: 80px;
-    padding: 8px;
-    background: #292929;
+
+    padding: 9px;
+
+    background: #222226;
     color: white;
-    border: 1px solid #444;
-    border-radius: 5px;
+
+    border: 1px solid #38383e;
+    border-radius: 6px;
+
+    outline: none;
+}
+
+.control-panel input:focus {
+    border-color: #666;
 }
 
 #bpmDisplay {
-    color: #aaa;
+    color: #888;
+    font-size: 14px;
 }
 
 #metronomeButton {
-    padding: 9px 14px;
+    margin-left: auto;
+
+    padding: 9px 15px;
+
     border-radius: 6px;
-    background: #292929;
+
+    background: #242428;
     color: white;
+
+    border: 1px solid #333338;
 }
 
 #metronomeButton:hover {
-    background: #3a3a3a;
+    background: #303036;
 }
 
 footer {
     text-align: center;
-    padding: 30px;
-    color: #666;
+
+    padding: 35px;
+
+    color: #555;
+
+    font-size: 13px;
+}
+
+
+@media (max-width: 700px) {
+
+    .top-bar {
+        padding: 18px 20px;
+
+        align-items: flex-start;
+
+        gap: 20px;
+    }
+
+    .top-bar h1 {
+        font-size: 26px;
+    }
+
+    .transport {
+        flex-direction: column;
+    }
+
+    main {
+        width: 94%;
+        margin: 25px auto;
+    }
+
+    section {
+        padding: 18px;
+    }
+
+    .piano {
+        height: 190px;
+    }
+
+    .drum-row {
+        gap: 10px;
+    }
+
+                                                                                                                            .drum-name {
+                                                                                                                            }
+
+    .steps {
+        gap: 4px;
+    }
+
+    .drum-name {
+            width: 55px;
+            font-size: 12px;
+        }
+
+    .step {
+        height: 32px;
+    }
 }
