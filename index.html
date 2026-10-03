@@ -27,25 +27,151 @@
 
     <main>
 
-        <section id="piano">
+        <section class="piano-section">
+
             <div class="section-header">
                 <h2>Piano</h2>
-                <p>Play notes using your mouse or keyboard.</p>
+                <p>Play notes using your mouse or computer keyboard.</p>
+            </div>
+
+            <div class="piano-controls">
+
+                <div class="piano-control">
+                    <label for="volume">Volume</label>
+                    <input
+                        type="range"
+                        id="volume"
+                        min="0"
+                        max="1"
+                        step="0.01"
+                        value="0.35"
+                    >
+                </div>
+
+                <div class="piano-control">
+                    <label for="waveform">Sound</label>
+
+                    <select id="waveform">
+                        <option value="sine">Sine</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="square">Square</option>
+                        <option value="sawtooth">Sawtooth</option>
+                    </select>
+                </div>
+
+                <div class="piano-control">
+                    <label for="octave">Octave</label>
+
+                    <button id="octaveDown">−</button>
+
+                    <span id="octaveDisplay">4</span>
+
+                    <button id="octaveUp">+</button>
+                </div>
+
+                <div class="piano-control">
+                    <label for="sustain">Sustain</label>
+
+                    <input
+                        type="range"
+                        id="sustain"
+                        min="0.1"
+                        max="2"
+                        step="0.1"
+                        value="0.7"
+                    >
+                </div>
+
+            </div>
+
+            <div class="note-display">
+                <span>Playing:</span>
+                <strong id="currentNote">—</strong>
             </div>
 
             <div class="piano">
-                <div class="white-key" data-note="C4">C</div>
-                <div class="white-key" data-note="D4">D</div>
-                <div class="white-key" data-note="E4">E</div>
-                <div class="white-key" data-note="F4">F</div>
-                <div class="white-key" data-note="G4">G</div>
-                <div class="white-key" data-note="A4">A</div>
-                <div class="white-key" data-note="B4">B</div>
-                <div class="white-key" data-note="C5">C</div>
-            </div>
-        </section>
+
+        <div class="black-key" data-note="C#4">
+            <small>W</small>
+        </div>
+
+        <button class="white-key" data-note="C4">
+            <span>C</span>
+            <small>A</small>
+        </button>
+
+        <div class="black-key" data-note="D#4">
+            <small>E</small>
+        </div>
+
+        <button class="white-key" data-note="D4">
+            <span>D</span>
+            <small>S</small>
+        </button>
+
+        <button class="white-key" data-note="E4">
+            <span>E</span>
+            <small>D</small>
+        </button>
+
+        <div class="black-key" data-note="F#4">
+            <small>T</small>
+        </div>
+
+        <button class="white-key" data-note="F4">
+            <span>F</span>
+            <small>F</small>
+        </button>
+
+        <div class="black-key" data-note="G#4">
+            <small>Y</small>
+        </div>
+
+        <button class="white-key" data-note="G4">
+            <span>G</span>
+            <small>G</small>
+        </button>
+
+        <div class="black-key" data-note="A#4">
+            <small>U</small>
+        </div>
+
+        <button class="white-key" data-note="A4">
+            <span>A</span>
+            <small>H</small>
+        </button>
+
+        <button class="white-key" data-note="B4">
+            <span>B</span>
+            <small>J</small>
+        </button>
+
+        <button class="white-key" data-note="C5">
+            <span>C</span>
+            <small>K</small>
+        </button>
+
+    </div>
+
+<div class="keyboard-help">
+    <span>Keyboard</span>
+
+    <div class="keyboard-keys">
+        <strong>A</strong>
+        <strong>S</strong>
+        <strong>D</strong>
+        <strong>F</strong>
+        <strong>G</strong>
+        <strong>H</strong>
+        <strong>J</strong>
+        <strong>K</strong>
+    </div>
+</div>
+
+    </section>
 
         <section id="drums">
+            
             <div class="section-header">
                 <h2>Drum Machine</h2>
                 <p>Create a simple 16-step rhythm.</p>
@@ -136,3 +262,11 @@
         <p>Groove Browser Music Studio</p>
     </footer>
 
+<footer>
+    <p>Groove Browser Music Studio</p>
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>
