@@ -462,16 +462,68 @@ footer {
 }
 
 .keyboard-help > span {
-    white-space: nowrap;
+    width: 70px;
+    flex-shrink: 0;
 }
 
 .keyboard-keys {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
     flex: 1;
-    justify-content: space-between;
+    text-align: center;
 }
 
 .keyboard-keys strong {
     color: #aaa;
     font-weight: normal;
 }
+
+.recording-panel {
+    margin-top: 14px;
+    padding: 14px;
+    background: #101013;
+    border: 1px solid #29292e;
+    border-radius: 8px;
+}
+
+.recording-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.recording-header span {
+    color: #777;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.recording-header strong {
+    color: #aaa;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.recording-display {
+    min-height: 38px;
+    padding: 10px;
+    background: #18181c;
+    border: 1px solid #29292e;
+    border-radius: 6px;
+    color: #aaa;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+#recordButton.recording {
+    background: #555;
+    border-color: #777;
+}
+
+
+
+
+

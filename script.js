@@ -6,6 +6,13 @@ let waveform = "sine";
 let octave = 4;
 let sustain = 0.7;
 
+let isRecording = false;
+let isPlaying = false;
+
+let recording = [];
+let recordingStartTime = 0;
+let playbackTimeouts = [];
+
 const activeNotes = new Map();
 
 const baseFrequencies = {
@@ -38,6 +45,25 @@ const keyboardMap = {
     j: "B"
 };
 
+const whiteNotes = [
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "A",
+    "B",
+    "C"
+];
+
+const blackNotes = [
+    "C#",
+    "D#",
+    "F#",
+    "G#",
+    "A#"
+];
+
 function getFrequency(note) {
     const name = note.replace(/[0-9]/g, "");
     const noteOctave = parseInt(note.match(/[0-9]+/)[0]);
@@ -60,9 +86,11 @@ function createSound(note) {
 
     const frequency = getFrequency(note);
 
-    // Main oscillator
     oscillator.type = waveform;
     oscillator.frequency.value = frequency;
+
+    secondOscillator.type = waveform;
+    secondOscillator.frequency.value = frequency * 2;
 
     gain.gain.setValueAtTime(
         0.001,
@@ -73,10 +101,6 @@ function createSound(note) {
         volume,
         audioContext.currentTime + 0.02
     );
-
-    // Second oscillator adds a subtle harmonic
-    secondOscillator.type = waveform;
-    secondOscillator.frequency.value = frequency * 2;
 
     secondGain.gain.setValueAtTime(
         0.001,
@@ -164,7 +188,7 @@ function getKey(note) {
     );
 }
 
-function pressKey(note) {
+function pressKey(note, shouldRecord = true) {
     const key = getKey(note);
 
     if (!key) return;
@@ -174,6 +198,10 @@ function pressKey(note) {
     createSound(note);
 
     key.classList.add("pressed");
+
+    if (shouldRecord && isRecording) {
+        recordNote(note);
+    }
 }
 
 function releaseKey(note) {
@@ -186,9 +214,192 @@ function releaseKey(note) {
     key.classList.remove("pressed");
 }
 
+function recordNote(note) {
+    const time =
+        performance.now() - recordingStartTime;
+
+    recording.push({
+        note: note,
+        time: time
+    });
+
+    updateRecordingDisplay();
+}
+
+function updateRecordingDisplay() {
+    const display =
+        document.getElementById("recordingDisplay");
+
+    if (!display) return;
+
+    if (recording.length === 0) {
+        display.textContent = "No notes recorded";
+        return;
+    }
+
+    display.textContent =
+        recording
+            .map(note => note.note)
+            .join(" → ");
+}
+
+function updateRecordingStatus(text) {
+    const status =
+        document.getElementById("recordingStatus");
+
+    if (status) {
+        status.textContent = text;
+    }
+}
+
+function startRecording() {
+
+    console.log("START RECORDING");
+
+    stopPlayback();
+
+    console.log("stopPlayback worked");
+
+    recording = [];
+
+    recordingStartTime = performance.now();
+
+    isRecording = true;
+
+    console.log("isRecording is now:", isRecording);
+
+    updateRecordingStatus("Recording...");
+
+    updateRecordingDisplay();
+
+    document
+        .getElementById("recordButton")
+        .classList.add("recording");
+
+    console.log("Recording started successfully");
+}
+
+function stopRecording() {
+    isRecording = false;
+
+    updateRecordingStatus(
+        recording.length > 0
+            ? "Recording complete"
+            : "Ready"
+    );
+
+    document
+        .getElementById("recordButton")
+        .classList.remove("recording");
+}
+
+function playRecording() {
+    if (recording.length === 0) {
+        updateRecordingStatus("Nothing to play");
+        return;
+    }
+
+    stopRecording();
+    stopPlayback();
+
+    isPlaying = true;
+
+    updateRecordingStatus("Playing...");
+
+    recording.forEach(noteData => {
+        const timeout = setTimeout(() => {
+            if (!isPlaying) return;
+
+            pressKey(noteData.note, false);
+
+            const releaseTimeout = setTimeout(() => {
+                releaseKey(noteData.note);
+            }, 250);
+
+            playbackTimeouts.push(releaseTimeout);
+        }, noteData.time);
+
+        playbackTimeouts.push(timeout);
+    });
+
+    const endTime =
+        recording[recording.length - 1].time + 500;
+
+    const finishTimeout = setTimeout(() => {
+        isPlaying = false;
+        updateRecordingStatus("Ready");
+    }, endTime);
+
+    playbackTimeouts.push(finishTimeout);
+}
+
+function stopPlayback() {
+    playbackTimeouts.forEach(timeout => {
+        clearTimeout(timeout);
+    });
+
+    playbackTimeouts = [];
+
+    isPlaying = false;
+
+    activeNotes.forEach((_, note) => {
+        releaseKey(note);
+    });
+}
+
+function clearRecording() {
+    stopPlayback();
+
+    recording = [];
+
+    updateRecordingDisplay();
+    updateRecordingStatus("Ready");
+}
+
+function updateOctave() {
+    document.getElementById("octaveDisplay").textContent = octave;
+
+    const whiteKeys = document.querySelectorAll(".white-key");
+    const blackKeys = document.querySelectorAll(".black-key");
+
+    const whiteNotes = [
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "A",
+        "B",
+        "C"
+    ];
+
+    const blackNotes = [
+        "C#",
+        "D#",
+        "F#",
+        "G#",
+        "A#"
+    ];
+
+    whiteKeys.forEach((key, index) => {
+        const noteOctave = index === 7
+            ? octave + 1
+            : octave;
+
+        key.dataset.note =
+            whiteNotes[index] + noteOctave;
+    });
+
+    blackKeys.forEach((key, index) => {
+        key.dataset.note =
+            blackNotes[index] + octave;
+    });
+}
+
 document
     .querySelectorAll(".white-key, .black-key")
     .forEach(key => {
+
         key.addEventListener("mousedown", () => {
             pressKey(key.dataset.note);
         });
@@ -210,7 +421,7 @@ document.addEventListener("keydown", event => {
     const key = event.key.toLowerCase();
 
     if (key === "k") {
-        pressKey("C5");
+        pressKey("C" + (octave + 1));
         return;
     }
 
@@ -225,7 +436,7 @@ document.addEventListener("keyup", event => {
     const key = event.key.toLowerCase();
 
     if (key === "k") {
-        releaseKey("C5");
+        releaseKey("C" + (octave + 1));
         return;
     }
 
@@ -254,12 +465,6 @@ document
         sustain = Number(event.target.value);
     });
 
-document.addEventListener("mouseup", () => {
-    activeNotes.forEach((sound, note) => {
-        releaseKey(note);
-    });
-});
-
 document
     .getElementById("octaveDown")
     .addEventListener("click", () => {
@@ -279,23 +484,30 @@ document
     });
 
 document
-    .querySelectorAll(".white-key, .black-key")
-    .forEach(key => {
-
-        key.addEventListener("touchstart", event => {
-            event.preventDefault();
-
-            pressKey(key.dataset.note);
-        });
-
-        key.addEventListener("touchend", event => {
-            event.preventDefault();
-
-            releaseKey(key.dataset.note);
-        });
+    .getElementById("recordButton")
+    .addEventListener("click", () => {
+        console.log("Record button clicked");
+        console.log("Recording state before:", isRecording);
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
     });
 
-function updateOctave() {
-    document.getElementById("octaveDisplay").textContent = octave;
-}
+document
+    .getElementById("playButton")
+    .addEventListener("click", () => {
+        playRecording();
+    });
+
+document
+    .getElementById("clearButton")
+    .addEventListener("click", () => {
+        clearRecording();
+    });
+
+updateOctave();
+updateRecordingDisplay();
+updateRecordingStatus("Ready");
 
