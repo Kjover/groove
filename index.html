@@ -278,22 +278,53 @@
 
             <div class="control-panel">
 
-                <label for="bpm">BPM</label>
 
-                <input
-                    type="number"
-                    id="bpm"
-                    value="120"
-                    min="40"
-                    max="240"
-                >
+            <div class="beat-display">
+
+            <span>Beat</span>
+
+            <div class="beat-indicators">
+                <span class="beat active" data-beat="1"></span>
+                <span class="beat" data-beat="2"></span>
+                <span class="beat" data-beat="3"></span>
+                <span class="beat" data-beat="4"></span>
+            </div>
+
+        </div>
+
+            <div class="tempo-control">
+
+                <label for="bpm">Tempo</label>
+
+                <div class="tempo-buttons">
+
+                    <button id="bpmDown">−</button>
+
+                    <input
+                        type="number"
+                        id="bpm"
+                        value="120"
+                        min="40"
+                        max="240"
+                    >
+
+                    <button id="bpmUp">+</button>
+
+                </div>
 
                 <span id="bpmDisplay">120 BPM</span>
 
-                <button id="metronomeButton">
-                    Metronome
-                </button>
+            </div>
 
+            <button id="metronomeButton">
+                Metronome: Off
+            </button>
+
+            <button id="tapTempoButton">
+                Tap Tempo
+            </button>
+
+        </div>
             </div>
 
         </section>
@@ -309,6 +340,3 @@
 </footer>
 
 <script src="script.js"></script>
-
-</body>
-</html>

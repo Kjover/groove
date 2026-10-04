@@ -629,6 +629,50 @@ footer {
 .step.active:hover {
     background: #ffffff;
 }
-function
+
+.tempo-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tempo-control label {
+    color: #aaa;
+    font-size: 14px;
+}
+
+.tempo-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tempo-buttons button {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: #242428;
+    color: white;
+    border: 1px solid #333338;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.tempo-buttons button:hover {
+    background: #303036;
+}
+
+.tempo-buttons button:active {
+    transform: scale(0.95);
+}
+
+#bpm {
+    width: 65px;
+    text-align: center;
+}
+
+#bpmDisplay {
+    min-width: 65px;
+}
 
 
