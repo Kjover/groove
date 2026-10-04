@@ -499,15 +499,319 @@ document
     .getElementById("playButton")
     .addEventListener("click", () => {
         playRecording();
+        if (drumPlaying) {
+        stopDrumSequencer();
+    } else {
+        startDrumSequencer();
+    }
     });
 
 document
     .getElementById("clearButton")
     .addEventListener("click", () => {
         clearRecording();
+        document
+        .querySelectorAll(".step")
+        .forEach(step => {
+            step.classList.remove("active");
+        });
+
+    stopDrumSequencer();
     });
 
 updateOctave();
 updateRecordingDisplay();
 updateRecordingStatus("Ready");
+
+const drumSteps = document.querySelectorAll(".step");
+
+drumSteps.forEach(step => {
+    step.addEventListener("click", () => {
+        step.classList.toggle("active");
+
+        const instrument = step.dataset.instrument;
+
+        playDrum(instrument);
+    });
+});
+
+
+let drumVolume = 0.35;
+
+const drumVolumeInput =
+    document.getElementById("drumVolume");
+
+const drumVolumeDisplay =
+    document.getElementById("drumVolumeDisplay");
+
+drumVolumeInput.addEventListener("input", () => {
+    drumVolume = Number(drumVolumeInput.value);
+
+    drumVolumeDisplay.textContent =
+        Math.round(drumVolume * 100) + "%";
+});
+
+const drumSounds = {
+    kick: 0.35,
+    snare: 0.25,
+    hihat: 0.15
+};
+
+function playKick() {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "sine";
+
+    oscillator.frequency.setValueAtTime(
+        150,
+        audioContext.currentTime
+    );
+
+    oscillator.frequency.exponentialRampToValueAtTime(
+        50,
+        audioContext.currentTime + 0.15
+    );
+
+    gain.gain.setValueAtTime(
+        drumVolume * drumSounds.kick,
+        audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.15
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(
+        audioContext.currentTime + 0.15
+    );
+}
+
+function playSnare() {
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    oscillator.type = "triangle";
+    oscillator.frequency.value = 180;
+
+    gain.gain.setValueAtTime(
+        drumVolume * drumSounds.snare,
+        audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.12
+    );
+
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(
+        audioContext.currentTime + 0.12
+    );
+
+    const noiseBuffer = audioContext.createBuffer(
+        1,
+        audioContext.sampleRate * 0.12,
+        audioContext.sampleRate
+    );
+
+    const noiseData = noiseBuffer.getChannelData(0);
+
+    for (let i = 0; i < noiseData.length; i++) {
+        noiseData[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioContext.createBufferSource();
+    const noiseGain = audioContext.createGain();
+
+    noise.buffer = noiseBuffer;
+
+    noiseGain.gain.setValueAtTime(
+        drumVolume * drumSounds.snare,
+        audioContext.currentTime
+    );
+
+    noiseGain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.12
+    );
+
+    noise.connect(noiseGain);
+    noiseGain.connect(audioContext.destination);
+
+    noise.start();
+}
+
+function playHiHat() {
+    const bufferSize =
+        audioContext.sampleRate * 0.08;
+
+    const noiseBuffer = audioContext.createBuffer(
+        1,
+        bufferSize,
+        audioContext.sampleRate
+    );
+
+    const noiseData = noiseBuffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+        noiseData[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+
+    noise.buffer = noiseBuffer;
+
+    filter.type = "highpass";
+    filter.frequency.value = 5000;
+
+    gain.gain.setValueAtTime(
+        drumVolume * drumSounds.hihat,
+        audioContext.currentTime
+    );
+
+    gain.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.08
+    );
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioContext.destination);
+
+    noise.start();
+}
+
+function playDrum(instrument) {
+    if (audioContext.state === "suspended") {
+        audioContext.resume();
+    }
+
+    if (instrument === "kick") {
+        playKick();
+    }
+
+    if (instrument === "snare") {
+        playSnare();
+    }
+
+    if (instrument === "hihat") {
+        playHiHat();
+    }
+}
+
+let drumPlaying = false;
+let currentStep = 0;
+let drumInterval = null;
+
+function playDrumStep() {
+    const steps = document.querySelectorAll(".step");
+
+    steps.forEach(step => {
+        step.classList.remove("playing");
+    });
+
+    const instruments = [
+        "kick",
+        "snare",
+        "hihat"
+    ];
+
+    instruments.forEach(instrument => {
+        const step = document.querySelector(
+            `.step[data-instrument="${instrument}"][data-step="${currentStep + 1}"]`
+        );
+
+        if (!step) return;
+
+        if (step.classList.contains("active")) {
+            playDrum(instrument);
+        }
+    });
+
+    const currentButtons = document.querySelectorAll(
+        `.step[data-step="${currentStep + 1}"]`
+    );
+
+    currentButtons.forEach(step => {
+        step.classList.add("playing");
+    });
+
+    currentStep++;
+
+    if (currentStep >= 8) {
+        currentStep = 0;
+    }
+}
+
+function startDrumSequencer() {
+    if (drumPlaying) return;
+
+    drumPlaying = true;
+    currentStep = 0;
+
+    const beatLength = 60000 / bpm;
+    const stepLength = beatLength / 2;
+
+    playDrumStep();
+
+    drumInterval = setInterval(() => {
+        playDrumStep();
+    }, stepLength);
+}
+
+function stopDrumSequencer() {
+    drumPlaying = false;
+
+    clearInterval(drumInterval);
+
+    drumInterval = null;
+    currentStep = 0;
+
+    document.querySelectorAll(".step").forEach(step => {
+        step.classList.remove("playing");
+    });
+}
+
+let bpm = 120;
+
+const bpmInput = document.getElementById("bpm");
+const bpmDisplay = document.getElementById("bpmDisplay");
+
+bpmInput.addEventListener("input", () => {
+    bpm = Number(bpmInput.value);
+    bpmDisplay.textContent = bpm + " BPM";
+});
+
+document
+    .getElementById("drumPlayButton")
+    .addEventListener("click", () => {
+        startDrumSequencer();
+    });
+
+document
+    .getElementById("drumStopButton")
+    .addEventListener("click", () => {
+        stopDrumSequencer();
+    });
+document
+    .getElementById("drumClearButton")
+    .addEventListener("click", () => {
+        document
+            .querySelectorAll(".step")
+            .forEach(step => {
+                step.classList.remove("active");
+            });
+    });
+
 

@@ -192,8 +192,35 @@
                 <p>Create a simple 16-step rhythm.</p>
             </div>
 
-            <div class="drum-machine">
+            <div class="drum-controls">
+                <button id="drumPlayButton">
+                    Play
+                </button>
 
+                <button id="drumStopButton">
+                    Stop
+                </button>
+
+                <button id="drumClearButton">
+                    Clear
+                </button>
+                <div class="drum-volume">
+            <label for="drumVolume">Drum Volume</label>
+
+            <input
+                    type="range"
+                    id="drumVolume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.35"
+                >
+
+                <span id="drumVolumeDisplay">35%</span>
+            </div>
+            </div>
+
+                    </div>
                 <div class="drum-row">
                     <span class="drum-name">Kick</span>
 
