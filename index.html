@@ -4,9 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Groove</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -60,12 +58,10 @@
                 </div>
 
                 <div class="piano-control">
-                    <label for="octave">Octave</label>
+                    <label>Octave</label>
 
                     <button id="octaveDown">−</button>
-
                     <span id="octaveDisplay">4</span>
-
                     <button id="octaveUp">+</button>
                 </div>
 
@@ -91,108 +87,137 @@
 
             <div class="piano">
 
-        <div class="black-key" data-note="C#4">
-            <small>W</small>
-        </div>
+                <div class="black-key" data-note="C#4">
+                    <small>W</small>
+                </div>
 
-        <button class="white-key" data-note="C4">
-            <span>C</span>
-            <small>A</small>
-        </button>
+                <button class="white-key" data-note="C4">
+                    <span>C</span>
+                    <small>A</small>
+                </button>
 
-        <div class="black-key" data-note="D#4">
-            <small>E</small>
-        </div>
+                <div class="black-key" data-note="D#4">
+                    <small>E</small>
+                </div>
 
-        <button class="white-key" data-note="D4">
-            <span>D</span>
-            <small>S</small>
-        </button>
+                <button class="white-key" data-note="D4">
+                    <span>D</span>
+                    <small>S</small>
+                </button>
 
-        <button class="white-key" data-note="E4">
-            <span>E</span>
-            <small>D</small>
-        </button>
+                <button class="white-key" data-note="E4">
+                    <span>E</span>
+                    <small>D</small>
+                </button>
 
-        <div class="black-key" data-note="F#4">
-            <small>T</small>
-        </div>
+                <div class="black-key" data-note="F#4">
+                    <small>T</small>
+                </div>
 
-        <button class="white-key" data-note="F4">
-            <span>F</span>
-            <small>F</small>
-        </button>
+                <button class="white-key" data-note="F4">
+                    <span>F</span>
+                    <small>F</small>
+                </button>
 
-        <div class="black-key" data-note="G#4">
-            <small>Y</small>
-        </div>
+                <div class="black-key" data-note="G#4">
+                    <small>Y</small>
+                </div>
 
-        <button class="white-key" data-note="G4">
-            <span>G</span>
-            <small>G</small>
-        </button>
+                <button class="white-key" data-note="G4">
+                    <span>G</span>
+                    <small>G</small>
+                </button>
 
-        <div class="black-key" data-note="A#4">
-            <small>U</small>
-        </div>
+                <div class="black-key" data-note="A#4">
+                    <small>U</small>
+                </div>
 
-        <button class="white-key" data-note="A4">
-            <span>A</span>
-            <small>H</small>
-        </button>
+                <button class="white-key" data-note="A4">
+                    <span>A</span>
+                    <small>H</small>
+                </button>
 
-        <button class="white-key" data-note="B4">
-            <span>B</span>
-            <small>J</small>
-        </button>
+                <button class="white-key" data-note="B4">
+                    <span>B</span>
+                    <small>J</small>
+                </button>
 
-        <button class="white-key" data-note="C5">
-            <span>C</span>
-            <small>K</small>
-        </button>
+                <button class="white-key" data-note="C5">
+                    <span>C</span>
+                    <small>K</small>
+                </button>
 
-    </div>
+            </div>
 
-<div class="keyboard-help">
-    <span>Keyboard</span>
+            <div class="keyboard-help">
+                <span>Keyboard</span>
 
-    <div class="keyboard-keys">
-        <strong>A</strong>
-        <strong>S</strong>
-        <strong>D</strong>
-        <strong>F</strong>
-        <strong>G</strong>
-        <strong>H</strong>
-        <strong>J</strong>
-        <strong>K</strong>
-    </div>
-        <div class="recording-panel">
+                <div class="keyboard-keys">
+                    <strong>A</strong>
+                    <strong>S</strong>
+                    <strong>D</strong>
+                    <strong>F</strong>
+                    <strong>G</strong>
+                    <strong>H</strong>
+                    <strong>J</strong>
+                    <strong>K</strong>
+                </div>
+            </div>
 
-        <div class="recording-header">
-            <span>Recording</span>
-            <strong id="recordingStatus">Ready</strong>
-        </div>
+            <div class="recording-panel">
 
-        <div
-            id="recordingDisplay"
-            class="recording-display"
-        >
-            No notes recorded
-        </div>
+                <div class="recording-header">
+                    <span>Recording</span>
+                    <strong id="recordingStatus">Ready</strong>
+                </div>
 
-    </div>
-</div>
+                <div
+                    id="recordingDisplay"
+                    class="recording-display"
+                >
+                    No notes recorded
+                </div>
 
-    </section>
+            </div>
+
+        </section>
+
+        <section class="bass-section">
+
+            <div class="section-header">
+                <h2>Bass</h2>
+                <p>Play lower notes alongside your piano.</p>
+            </div>
+
+            <div class="bass-display">
+                <span>Playing:</span>
+                <strong id="currentBassNote">—</strong>
+            </div>
+
+            <div class="bass-keyboard">
+
+                <button class="bass-key" data-note="C2">C</button>
+                <button class="bass-key" data-note="D2">D</button>
+                <button class="bass-key" data-note="E2">E</button>
+                <button class="bass-key" data-note="F2">F</button>
+                <button class="bass-key" data-note="G2">G</button>
+                <button class="bass-key" data-note="A2">A</button>
+                <button class="bass-key" data-note="B2">B</button>
+                <button class="bass-key" data-note="C3">C</button>
+
+            </div>
+
+        </section>
 
         <section id="drums">
-            
+
             <div class="section-header">
                 <h2>Drum Machine</h2>
-                <p>Create a simple 16-step rhythm.</p>
+                <p>Build an 8-step rhythm.</p>
             </div>
 
             <div class="drum-controls">
+
                 <button id="drumPlayButton">
                     Play
                 </button>
@@ -204,10 +229,14 @@
                 <button id="drumClearButton">
                     Clear
                 </button>
-                <div class="drum-volume">
-            <label for="drumVolume">Drum Volume</label>
 
-            <input
+            </div>
+
+            <div class="drum-volume">
+
+                <label for="drumVolume">Drum Volume</label>
+
+                <input
                     type="range"
                     id="drumVolume"
                     min="0"
@@ -217,10 +246,11 @@
                 >
 
                 <span id="drumVolumeDisplay">35%</span>
-            </div>
+
             </div>
 
-                    </div>
+            <div class="drum-machine">
+
                 <div class="drum-row">
                     <span class="drum-name">Kick</span>
 
@@ -267,6 +297,7 @@
                 </div>
 
             </div>
+
         </section>
 
         <section id="controls">
@@ -278,65 +309,89 @@
 
             <div class="control-panel">
 
+                <div class="beat-display">
 
-            <div class="beat-display">
+                    <span>Beat</span>
 
-            <span>Beat</span>
-
-            <div class="beat-indicators">
-                <span class="beat active" data-beat="1"></span>
-                <span class="beat" data-beat="2"></span>
-                <span class="beat" data-beat="3"></span>
-                <span class="beat" data-beat="4"></span>
-            </div>
-
-        </div>
-
-            <div class="tempo-control">
-
-                <label for="bpm">Tempo</label>
-
-                <div class="tempo-buttons">
-
-                    <button id="bpmDown">−</button>
-
-                    <input
-                        type="number"
-                        id="bpm"
-                        value="120"
-                        min="40"
-                        max="240"
-                    >
-
-                    <button id="bpmUp">+</button>
+                    <div class="beat-indicators">
+                        <span class="beat active" data-beat="1"></span>
+                        <span class="beat" data-beat="2"></span>
+                        <span class="beat" data-beat="3"></span>
+                        <span class="beat" data-beat="4"></span>
+                    </div>
 
                 </div>
 
-                <span id="bpmDisplay">120 BPM</span>
+                <div class="tempo-control">
+
+                    <label for="bpm">Tempo</label>
+
+                    <div class="tempo-buttons">
+
+                        <button id="bpmDown">−</button>
+
+                        <input
+                            type="number"
+                            id="bpm"
+                            value="120"
+                            min="40"
+                            max="240"
+                        >
+
+                        <button id="bpmUp">+</button>
+
+                    </div>
+
+                    <span id="bpmDisplay">120 BPM</span>
+
+                </div>
+
+                <button id="metronomeButton">
+                    Metronome: Off
+                </button>
+
+                <button id="tapTempoButton">
+                    Tap Tempo
+                </button>
+
+                <p id="tapTempoDisplay">0 taps</p>
 
             </div>
 
-            <button id="metronomeButton">
-                Metronome: Off
-            </button>
+        </section>
 
-            <button id="tapTempoButton">
-                Tap Tempo
-            </button>
+        <section class="project-section">
 
-        </div>
+            <div class="section-header">
+                <h2>Project</h2>
+                <p id="saveStatus">Unsaved changes</p>
+            </div>
+
+            <div class="project-controls">
+
+                <button id="saveButton">
+                    Save
+                </button>
+
+                <button id="loadButton">
+                    Load
+                </button>
+
+                <button id="deleteSaveButton">
+                    Delete Save
+                </button>
+
             </div>
 
         </section>
 
     </main>
-    
+
     <footer>
         <p>Groove Browser Music Studio</p>
     </footer>
 
-<footer>
-    <p>Groove Browser Music Studio</p>
-</footer>
+    <script src="script.js"></script>
 
-<script src="script.js"></script>
+</body>
+</html>
