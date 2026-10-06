@@ -1,52 +1,57 @@
-const audioContext =
-    new (window.AudioContext || window.webkitAudioContext)();
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-let volume = 0.35;
+let masterVolume = 0.35;
+let drumVolume = 0.35;
 let waveform = "sine";
 let octave = 4;
 let sustain = 0.7;
+let bpm = 120;
+let swing = 0;
+let chordMode = "off";
 
-let isRecording = false;
 let isPlaying = false;
+let isRecording = false;
+let isDrumPlaying = false;
+let isMetronomeOn = false;
 
 let recording = [];
 let recordingStartTime = 0;
-let playbackTimeouts = [];
+let recordingTimer = null;
+let playbackTimer = null;
+let playbackIndex = 0;
+let playbackStartTime = 0;
 
-let bpm = 120;
+let activeNotes = new Map();
+let activeChords = new Map();
+let activeBassNotes = new Map();
 
-let drumVolume = 0.35;
-let drumPlaying = false;
-let currentStep = 0;
-let drumInterval = null;
+let drumStep = 0;
+let drumTimer = null;
 
-let metronomeEnabled = false;
 let metronomeBeat = 0;
-let metronomeInterval = null;
+let metronomeTimer = null;
 
 let tapTimes = [];
-let tapResetTimeout = null;
+let tapResetTimer = null;
 
-let hasUnsavedChanges = true;
+const DRUM_STEPS = 16;
+const MIN_BPM = 40;
+const MAX_BPM = 240;
 
-const activeNotes = new Map();
-
-const activeBassNotes = new Map();
-
-const baseFrequencies = {
-    C: 261.63,
-    "C#": 277.18,
-    D: 293.66,
-    "D#": 311.13,
-    E: 329.63,
-    F: 349.23,
-    "F#": 369.99,
-    G: 392.00,
-    "G#": 415.30,
-    A: 440.00,
-    "A#": 466.16,
-    B: 493.88
-};
+const chromaticNotes = [
+    "C",
+    "C#",
+    "D",
+    "D#",
+    "E",
+    "F",
+    "F#",
+    "G",
+    "G#",
+    "A",
+    "A#",
+    "B"
+];
 
 const keyboardMap = {
     a: "C",
@@ -60,1113 +65,826 @@ const keyboardMap = {
     y: "G#",
     h: "A",
     u: "A#",
-    j: "B"
+    j: "B",
+    k: "C"
 };
 
-const volumeInput =
-    document.getElementById("volume");
+const pianoContainer = document.querySelector(".piano");
+const volumeSlider = document.getElementById("volume");
+const volumeDisplay = document.getElementById("volumeDisplay");
+const waveformSelect = document.getElementById("waveform");
+const sustainSlider = document.getElementById("sustain");
+const sustainDisplay = document.getElementById("sustainDisplay");
+const octaveDisplay = document.getElementById("octaveDisplay");
+const octaveDown = document.getElementById("octaveDown");
+const octaveUp = document.getElementById("octaveUp");
+const chordModeSelect = document.getElementById("chordMode");
+const currentNote = document.getElementById("currentNote");
+const currentBassNote = document.getElementById("currentBassNote");
 
-const waveformInput =
-    document.getElementById("waveform");
+const recordingStatus = document.getElementById("recordingStatus");
+const recordingDisplay = document.getElementById("recordingDisplay");
+const recordingNoteCount = document.getElementById("recordingNoteCount");
+const recordingDuration = document.getElementById("recordingDuration");
 
-const sustainInput =
-    document.getElementById("sustain");
+const recordButton = document.getElementById("recordButton");
+const clearButton = document.getElementById("clearButton");
+const playButton = document.getElementById("playButton");
+const playRecordingButton = document.getElementById("playRecordingButton");
+const stopRecordingButton = document.getElementById("stopRecordingButton");
 
-const octaveDisplay =
-    document.getElementById("octaveDisplay");
+const bpmInput = document.getElementById("bpm");
+const bpmDisplay = document.getElementById("bpmDisplay");
+const bpmDown = document.getElementById("bpmDown");
+const bpmUp = document.getElementById("bpmUp");
 
-const currentNoteDisplay =
-    document.getElementById("currentNote");
+const drumPlayButton = document.getElementById("drumPlayButton");
+const drumStopButton = document.getElementById("drumStopButton");
+const drumClearButton = document.getElementById("drumClearButton");
+const drumVolumeSlider = document.getElementById("drumVolume");
+const drumVolumeDisplay = document.getElementById("drumVolumeDisplay");
 
-const currentBassNoteDisplay =
-    document.getElementById("currentBassNote");
+const swingSlider = document.getElementById("swing");
+const swingDisplay = document.getElementById("swingDisplay");
 
-const recordingDisplay =
-    document.getElementById("recordingDisplay");
+const metronomeButton = document.getElementById("metronomeButton");
+const tapTempoButton = document.getElementById("tapTempoButton");
+const tapTempoDisplay = document.getElementById("tapTempoDisplay");
 
-const recordingStatus =
-    document.getElementById("recordingStatus");
+const saveButton = document.getElementById("saveButton");
+const loadButton = document.getElementById("loadButton");
+const deleteSaveButton = document.getElementById("deleteSaveButton");
+const saveStatus = document.getElementById("saveStatus");
 
-const recordButton =
-    document.getElementById("recordButton");
+const drumRows = document.querySelectorAll(".drum-row");
 
-const playButton =
-    document.getElementById("playButton");
-
-const clearButton =
-    document.getElementById("clearButton");
-
-const bpmInput =
-    document.getElementById("bpm");
-
-const bpmDisplay =
-    document.getElementById("bpmDisplay");
-
-const bpmDown =
-    document.getElementById("bpmDown");
-
-const bpmUp =
-    document.getElementById("bpmUp");
-
-const drumVolumeInput =
-    document.getElementById("drumVolume");
-
-const drumVolumeDisplay =
-    document.getElementById("drumVolumeDisplay");
-
-const tapTempoButton =
-    document.getElementById("tapTempoButton");
-
-const tapTempoDisplay =
-    document.getElementById("tapTempoDisplay");
-
-const metronomeButton =
-    document.getElementById("metronomeButton");
-
-const saveButton =
-    document.getElementById("saveButton");
-
-const loadButton =
-    document.getElementById("loadButton");
-
-const deleteSaveButton =
-    document.getElementById("deleteSaveButton");
-
-const saveStatus =
-    document.getElementById("saveStatus");
-
-function getFrequency(note) {
-
-    const name = note.replace(/[0-9]/g, "");
-
-    const octaveMatch =
-        note.match(/[0-9]+/);
-
-    if (!octaveMatch) {
-        return 0;
-    }
-
-    const noteOctave =
-        parseInt(octaveMatch[0]);
-
-    const base =
-        baseFrequencies[name];
-
-    if (!base) {
-        return 0;
-    }
-
-    return base *
-        Math.pow(2, noteOctave - 4);
-}
-
-function createSound(note) {
-
+function ensureAudio() {
     if (audioContext.state === "suspended") {
         audioContext.resume();
     }
+}
 
-    const oscillator =
-        audioContext.createOscillator();
+function noteToMidi(note) {
+    const match = note.match(/^([A-G]#?)(-?\d+)$/);
 
-    const gain =
-        audioContext.createGain();
+    if (!match) {
+        return null;
+    }
 
-    const secondOscillator =
-        audioContext.createOscillator();
+    const noteName = match[1];
+    const noteOctave = Number(match[2]);
+    const noteIndex = chromaticNotes.indexOf(noteName);
 
-    const secondGain =
-        audioContext.createGain();
+    if (noteIndex === -1) {
+        return null;
+    }
 
-    const frequency =
-        getFrequency(note);
+    return (noteOctave + 1) * 12 + noteIndex;
+}
 
-    oscillator.type = waveform;
-    oscillator.frequency.value = frequency;
+function midiToNote(midi) {
+    const noteIndex = ((midi % 12) + 12) % 12;
+    const noteOctave = Math.floor(midi / 12) - 1;
 
-    secondOscillator.type = waveform;
-    secondOscillator.frequency.value =
-        frequency * 2;
+    return `${chromaticNotes[noteIndex]}${noteOctave}`;
+}
 
-    gain.gain.setValueAtTime(
-        0.001,
+function getNoteFrequency(note) {
+    const midi = noteToMidi(note);
+
+    if (midi === null) {
+        return 0;
+    }
+
+    return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function getChordNotes(rootNote, mode) {
+    if (mode === "off") {
+        return [rootNote];
+    }
+
+    const rootMidi = noteToMidi(rootNote);
+
+    if (rootMidi === null) {
+        return [rootNote];
+    }
+
+    let intervals = [];
+
+    if (mode === "major") {
+        intervals = [0, 4, 7];
+    }
+
+    if (mode === "minor") {
+        intervals = [0, 3, 7];
+    }
+
+    if (mode === "7th") {
+        intervals = [0, 4, 7, 10];
+    }
+
+    return intervals.map(interval => midiToNote(rootMidi + interval));
+}
+
+function createOscillator(frequency, type, volume, duration = null) {
+    ensureAudio();
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(
+        frequency,
         audioContext.currentTime
     );
 
-    gain.gain.exponentialRampToValueAtTime(
+    gainNode.gain.setValueAtTime(
         volume,
-        audioContext.currentTime + 0.02
-    );
-
-    secondGain.gain.setValueAtTime(
-        0.001,
         audioContext.currentTime
     );
 
-    secondGain.gain.exponentialRampToValueAtTime(
-        volume * 0.08,
-        audioContext.currentTime + 0.02
-    );
-
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
-
-    secondOscillator.connect(secondGain);
-    secondGain.connect(audioContext.destination);
-
-    oscillator.start();
-    secondOscillator.start();
-
-    activeNotes.set(note, {
-        oscillator,
-        gain,
-        secondOscillator,
-        secondGain
-    });
-
-    updateNoteDisplay(note);
-}
-
-function releaseSound(note) {
-
-    const sound =
-        activeNotes.get(note);
-
-    if (!sound) {
-        return;
-    }
-
-    const now =
-        audioContext.currentTime;
-
-    sound.gain.gain.cancelScheduledValues(now);
-
-    sound.gain.gain.setValueAtTime(
-        sound.gain.gain.value,
-        now
-    );
-
-    sound.gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + sustain
-    );
-
-    sound.secondGain.gain.cancelScheduledValues(now);
-
-    sound.secondGain.gain.setValueAtTime(
-        sound.secondGain.gain.value,
-        now
-    );
-
-    sound.secondGain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + sustain
-    );
-
-    sound.oscillator.stop(
-        now + sustain
-    );
-
-    sound.secondOscillator.stop(
-        now + sustain
-    );
-
-    activeNotes.delete(note);
-
-    setTimeout(() => {
-
-        if (activeNotes.size === 0) {
-            updateNoteDisplay("—");
-        }
-
-    }, sustain * 1000);
-}
-
-function createBassSound(note) {
-
-    if (audioContext.state === "suspended") {
-        audioContext.resume();
-    }
-
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gain =
-        audioContext.createGain();
-
-    const frequency =
-        getFrequency(note);
-
-    oscillator.type = "sawtooth";
-
-    oscillator.frequency.value =
-        frequency;
-
-    gain.gain.setValueAtTime(
-        0.001,
-        audioContext.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-        volume * 0.55,
-        audioContext.currentTime + 0.03
-    );
-
-    oscillator.connect(gain);
-    gain.connect(audioContext.destination);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
 
     oscillator.start();
 
-    activeBassNotes.set(note, {
+    if (duration !== null) {
+        gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            audioContext.currentTime + duration
+        );
+
+        oscillator.stop(
+            audioContext.currentTime + duration
+        );
+    }
+
+    return {
         oscillator,
-        gain
-    });
-
-    currentBassNoteDisplay.textContent =
-        note;
+        gainNode
+    };
 }
 
-function releaseBassSound(note) {
+function playNote(note, type = waveform, volume = masterVolume) {
+    ensureAudio();
 
-    const sound =
-        activeBassNotes.get(note);
+    const frequency = getNoteFrequency(note);
 
-    if (!sound) {
-        return;
-    }
-
-    const now =
-        audioContext.currentTime;
-
-    sound.gain.gain.cancelScheduledValues(now);
-
-    sound.gain.gain.setValueAtTime(
-        sound.gain.gain.value,
-        now
-    );
-
-    sound.gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + sustain
-    );
-
-    sound.oscillator.stop(
-        now + sustain
-    );
-
-    activeBassNotes.delete(note);
-
-    setTimeout(() => {
-
-        if (activeBassNotes.size === 0) {
-            currentBassNoteDisplay.textContent =
-                "—";
-        }
-
-    }, sustain * 1000);
-}
-
-function updateNoteDisplay(note) {
-
-    if (currentNoteDisplay) {
-        currentNoteDisplay.textContent =
-            note;
-    }
-}
-
-function updateRecordingStatus(text) {
-
-    if (recordingStatus) {
-        recordingStatus.textContent =
-            text;
-    }
-}
-
-function updateRecordingDisplay() {
-
-    if (!recordingDisplay) {
-        return;
-    }
-
-    if (recording.length === 0) {
-
-        recordingDisplay.textContent =
-            "No notes recorded";
-
-        return;
-    }
-
-    recordingDisplay.textContent =
-        recording
-            .map(note => {
-                return `${note.instrument}: ${note.note}`;
-            })
-            .join(" → ");
-}
-
-function markUnsaved() {
-
-    hasUnsavedChanges = true;
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Unsaved changes";
-    }
-}
-
-function markSaved() {
-
-    hasUnsavedChanges = false;
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Saved";
-    }
-}
-
-function getKey(note) {
-
-    return document.querySelector(
-        `[data-note="${note}"]`
-    );
-}
-
-function pressKey(
-    note,
-    shouldRecord = true
-) {
-
-    const key =
-        getKey(note);
-
-    if (!key) {
+    if (!frequency) {
         return;
     }
 
     if (activeNotes.has(note)) {
+        stopNote(note, 0.03);
+    }
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = type;
+
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        audioContext.currentTime
+    );
+
+    gainNode.gain.setValueAtTime(
+        Math.max(volume, 0.001),
+        audioContext.currentTime
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+
+    activeNotes.set(note, {
+        oscillator,
+        gainNode
+    });
+
+    return oscillator;
+}
+
+function stopNote(note, releaseTime = sustain) {
+    const active = activeNotes.get(note);
+
+    if (!active) {
         return;
     }
 
-    createSound(note);
+    const now = audioContext.currentTime;
+    const release = Math.max(releaseTime, 0.03);
 
-    key.classList.add("pressed");
+    active.gainNode.gain.cancelScheduledValues(now);
 
-    if (
-        shouldRecord &&
-        isRecording
-    ) {
+    active.gainNode.gain.setValueAtTime(
+        Math.max(active.gainNode.gain.value, 0.001),
+        now
+    );
 
-        recordNote(
-            note,
-            "piano"
-        );
+    active.gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        now + release
+    );
+
+    try {
+        active.oscillator.stop(now + release + 0.02);
+    } catch (error) {
     }
 
-    if (shouldRecord) {
-        markUnsaved();
-    }
+    activeNotes.delete(note);
 }
 
-function releaseKey(note) {
+function playChord(rootNote) {
+    const notes = getChordNotes(rootNote, chordMode);
+    const chordNotes = [];
 
-    const key =
-        getKey(note);
+    notes.forEach(note => {
+        playNote(note);
+        chordNotes.push(note);
+    });
 
-    if (!key) {
+    activeChords.set(rootNote, chordNotes);
+}
+
+function stopChord(rootNote) {
+    const notes = activeChords.get(rootNote);
+
+    if (!notes) {
+        stopNote(rootNote);
         return;
     }
 
-    releaseSound(note);
+    notes.forEach(note => {
+        stopNote(note);
+    });
 
-    key.classList.remove("pressed");
+    activeChords.delete(rootNote);
 }
 
-function getBassKey(note) {
+function setKeyPressed(keyElement, pressed) {
+    if (!keyElement) {
+        return;
+    }
 
-    return document.querySelector(
-        `.bass-key[data-note="${note}"]`
+    keyElement.classList.toggle("pressed", pressed);
+}
+
+function findPianoKey(note) {
+    if (!pianoContainer) {
+        return null;
+    }
+
+    return pianoContainer.querySelector(
+        `.piano-key[data-note="${note}"]`
     );
 }
 
-function pressBassKey(
-    note,
-    shouldRecord = true
-) {
-
-    const key =
-        getBassKey(note);
-
-    if (!key) {
+function renderPiano() {
+    if (!pianoContainer) {
         return;
     }
 
-    if (activeBassNotes.has(note)) {
-        return;
-    }
+    pianoContainer.innerHTML = "";
 
-    createBassSound(note);
+    const whiteNotes = [
+        `C${octave}`,
+        `D${octave}`,
+        `E${octave}`,
+        `F${octave}`,
+        `G${octave}`,
+        `A${octave}`,
+        `B${octave}`,
+        `C${octave + 1}`
+    ];
 
-    key.classList.add("pressed");
+    const whiteKeyboardLabels = [
+        "A",
+        "S",
+        "D",
+        "F",
+        "G",
+        "H",
+        "J",
+        "K"
+    ];
 
-    if (
-        shouldRecord &&
-        isRecording
-    ) {
+    whiteNotes.forEach((note, index) => {
+        const key = document.createElement("button");
 
-        recordNote(
-            note,
-            "bass"
-        );
-    }
+        key.className = "piano-key white-key";
+        key.dataset.note = note;
+        key.dataset.keyboard = whiteKeyboardLabels[index];
 
-    if (shouldRecord) {
-        markUnsaved();
+        key.innerHTML = `
+            <span>${note}</span>
+            <small>${whiteKeyboardLabels[index]}</small>
+        `;
+
+        pianoContainer.appendChild(key);
+    });
+
+    const blackNotes = [
+        `C#${octave}`,
+        `D#${octave}`,
+        `F#${octave}`,
+        `G#${octave}`,
+        `A#${octave}`
+    ];
+
+    const blackKeyboardLabels = [
+        "W",
+        "E",
+        "T",
+        "Y",
+        "U"
+    ];
+
+    const blackPositions = [
+        11.25,
+        23.75,
+        48.75,
+        61.25,
+        73.75
+    ];
+
+    blackNotes.forEach((note, index) => {
+        const key = document.createElement("button");
+
+        key.className = `piano-key black-key black-${index + 1}`;
+        key.dataset.note = note;
+        key.dataset.keyboard = blackKeyboardLabels[index];
+
+        key.style.left = `${blackPositions[index]}%`;
+
+        key.innerHTML = `
+            <span>${note}</span>
+            <small>${blackKeyboardLabels[index]}</small>
+        `;
+
+        pianoContainer.appendChild(key);
+    });
+
+    bindPianoEvents();
+
+    if (octaveDisplay) {
+        octaveDisplay.textContent = octave;
     }
 }
 
-function releaseBassKey(note) {
+function getRootNoteFromKeyboardKey(key) {
+    const lowerKey = key.toLowerCase();
+    const noteName = keyboardMap[lowerKey];
 
-    const key =
-        getBassKey(note);
+    if (!noteName) {
+        return null;
+    }
 
-    if (!key) {
+    if (lowerKey === "k") {
+        return `${noteName}${octave + 1}`;
+    }
+
+    return `${noteName}${octave}`;
+}
+
+function playPianoKey(note, keyElement) {
+    ensureAudio();
+
+    if (chordMode === "off") {
+        playNote(note);
+    } else {
+        playChord(note);
+    }
+
+    setKeyPressed(keyElement, true);
+
+    if (currentNote) {
+        currentNote.textContent =
+            chordMode === "off"
+                ? note
+                : `${note} ${chordMode}`;
+    }
+
+    recordNote(note);
+}
+
+function releasePianoKey(note, keyElement) {
+    if (chordMode === "off") {
+        stopNote(note);
+    } else {
+        stopChord(note);
+    }
+
+    setKeyPressed(keyElement, false);
+}
+
+function bindPianoEvents() {
+    const keys = pianoContainer.querySelectorAll(".piano-key");
+
+    keys.forEach(key => {
+        key.addEventListener("pointerdown", event => {
+            event.preventDefault();
+
+            const note = key.dataset.note;
+
+            playPianoKey(note, key);
+        });
+
+        key.addEventListener("pointerup", event => {
+            event.preventDefault();
+
+            const note = key.dataset.note;
+
+            releasePianoKey(note, key);
+        });
+
+        key.addEventListener("pointercancel", event => {
+            event.preventDefault();
+
+            const note = key.dataset.note;
+
+            releasePianoKey(note, key);
+        });
+
+        key.addEventListener("pointerleave", event => {
+            if (event.buttons === 1) {
+                const note = key.dataset.note;
+
+                releasePianoKey(note, key);
+            }
+        });
+    });
+}
+
+function recordNote(note) {
+    if (!isRecording) {
         return;
     }
 
-    releaseBassSound(note);
-
-    key.classList.remove("pressed");
-}
-
-function recordNote(
-    note,
-    instrument
-) {
-
-    const time =
-        performance.now() -
-        recordingStartTime;
+    const now = performance.now();
+    const elapsed = now - recordingStartTime;
 
     recording.push({
-        note: note,
-        instrument: instrument,
-        time: time
+        note,
+        time: elapsed,
+        chord: chordMode
     });
 
     updateRecordingDisplay();
+}
+
+function updateRecordingDisplay() {
+    if (recordingDisplay) {
+        if (recording.length === 0) {
+            recordingDisplay.textContent = "No notes recorded yet.";
+        } else {
+            recordingDisplay.textContent = recording
+                .map(item => {
+                    if (item.chord && item.chord !== "off") {
+                        return `${item.note} (${item.chord})`;
+                    }
+
+                    return item.note;
+                })
+                .join(" • ");
+        }
+    }
+
+    if (recordingNoteCount) {
+        recordingNoteCount.textContent = recording.length;
+    }
+
+    updateRecordingDuration();
+}
+
+function updateRecordingDuration() {
+    if (!recordingDuration) {
+        return;
+    }
+
+    if (recording.length === 0) {
+        recordingDuration.textContent = "0.0s";
+        return;
+    }
+
+    let duration = recording[recording.length - 1].time;
+
+    if (isRecording) {
+        duration = performance.now() - recordingStartTime;
+    }
+
+    recordingDuration.textContent =
+        `${Math.max(duration / 1000, 0).toFixed(1)}s`;
 }
 
 function startRecording() {
+    ensureAudio();
 
-    stopPlayback();
+    stopRecordingPlayback();
 
     recording = [];
-
-    recordingStartTime =
-        performance.now();
-
+    recordingStartTime = performance.now();
     isRecording = true;
 
-    updateRecordingStatus(
-        "Recording..."
-    );
+    if (recordButton) {
+        recordButton.textContent = "Stop Recording";
+        recordButton.classList.add("active");
+    }
+
+    if (recordingStatus) {
+        recordingStatus.textContent = "Recording";
+    }
 
     updateRecordingDisplay();
 
-    recordButton.classList.add(
-        "recording"
-    );
+    clearInterval(recordingTimer);
+
+    recordingTimer = setInterval(() => {
+        updateRecordingDuration();
+    }, 100);
 }
 
 function stopRecording() {
+    if (!isRecording) {
+        return;
+    }
+
+    updateRecordingDuration();
 
     isRecording = false;
 
-    updateRecordingStatus(
-        recording.length > 0
-            ? "Recording complete"
-            : "Ready"
-    );
+    clearInterval(recordingTimer);
+    recordingTimer = null;
 
-    recordButton.classList.remove(
-        "recording"
-    );
+    if (recordButton) {
+        recordButton.textContent = "Record";
+        recordButton.classList.remove("active");
+    }
+
+    if (recordingStatus) {
+        recordingStatus.textContent =
+            recording.length > 0
+                ? "Recording saved"
+                : "Ready";
+    }
+
+    updateRecordingDisplay();
+}
+
+function toggleRecording() {
+    if (isRecording) {
+        stopRecording();
+    } else {
+        startRecording();
+    }
+}
+
+function clearRecording() {
+    stopRecordingPlayback();
+
+    recording = [];
+
+    if (recordingStatus) {
+        recordingStatus.textContent = "Ready";
+    }
+
+    updateRecordingDisplay();
 }
 
 function playRecording() {
-
     if (recording.length === 0) {
-
-        updateRecordingStatus(
-            "Nothing to play"
-        );
+        if (recordingStatus) {
+            recordingStatus.textContent = "Nothing to play";
+        }
 
         return;
     }
 
-    stopRecording();
+    ensureAudio();
 
-    stopPlayback();
+    stopRecordingPlayback();
 
     isPlaying = true;
+    playbackIndex = 0;
+    playbackStartTime = performance.now();
 
-    playButton.textContent =
-        "Stop";
+    if (playButton) {
+        playButton.textContent = "Stop";
+        playButton.classList.add("active");
+    }
 
-    updateRecordingStatus(
-        "Playing..."
-    );
+    if (playRecordingButton) {
+        playRecordingButton.textContent = "Playing...";
+        playRecordingButton.classList.add("active");
+    }
 
-    recording.forEach(noteData => {
+    if (recordingStatus) {
+        recordingStatus.textContent = "Playing recording";
+    }
 
-        const timeout =
-            setTimeout(() => {
-
-                if (!isPlaying) {
-                    return;
-                }
-
-                if (
-                    noteData.instrument ===
-                    "bass"
-                ) {
-
-                    pressBassKey(
-                        noteData.note,
-                        false
-                    );
-
-                    const releaseTimeout =
-                        setTimeout(() => {
-
-                            releaseBassKey(
-                                noteData.note
-                            );
-
-                        }, 250);
-
-                    playbackTimeouts.push(
-                        releaseTimeout
-                    );
-
-                } else {
-
-                    pressKey(
-                        noteData.note,
-                        false
-                    );
-
-                    const releaseTimeout =
-                        setTimeout(() => {
-
-                            releaseKey(
-                                noteData.note
-                            );
-
-                        }, 250);
-
-                    playbackTimeouts.push(
-                        releaseTimeout
-                    );
-                }
-
-            }, noteData.time);
-
-        playbackTimeouts.push(timeout);
-
-    });
-
-    const endTime =
-        recording[
-            recording.length - 1
-        ].time + 600;
-
-    const finishTimeout =
-        setTimeout(() => {
-
-            isPlaying = false;
-
-            playButton.textContent =
-                "Play";
-
-            updateRecordingStatus(
-                "Ready"
-            );
-
-        }, endTime);
-
-    playbackTimeouts.push(
-        finishTimeout
-    );
+    scheduleNextRecordingNote();
 }
 
-function stopPlayback() {
+function scheduleNextRecordingNote() {
+    if (!isPlaying || playbackIndex >= recording.length) {
+        stopRecordingPlayback();
+        return;
+    }
 
-    playbackTimeouts.forEach(
-        timeout => {
-            clearTimeout(timeout);
-        }
+    const noteData = recording[playbackIndex];
+
+    const currentElapsed =
+        performance.now() - playbackStartTime;
+
+    const delay = Math.max(
+        0,
+        noteData.time - currentElapsed
     );
 
-    playbackTimeouts = [];
+    playbackTimer = setTimeout(() => {
+        if (!isPlaying) {
+            return;
+        }
 
+        const note = noteData.note;
+        const storedChord = noteData.chord || "off";
+
+        const notes = getChordNotes(
+            note,
+            storedChord
+        );
+
+        notes.forEach(chordNote => {
+            playNote(chordNote);
+        });
+
+        setTimeout(() => {
+            notes.forEach(chordNote => {
+                stopNote(chordNote, 0.12);
+            });
+        }, Math.max(100, sustain * 500));
+
+        playbackIndex++;
+
+        scheduleNextRecordingNote();
+    }, delay);
+}
+
+function stopRecordingPlayback() {
     isPlaying = false;
 
-    activeNotes.forEach(
-        (_, note) => {
-            releaseKey(note);
-        }
-    );
+    clearTimeout(playbackTimer);
+    playbackTimer = null;
 
-    activeBassNotes.forEach(
-        (_, note) => {
-            releaseBassKey(note);
-        }
-    );
-
-    playButton.textContent =
-        "Play";
-}
-
-function clearRecording() {
-
-    stopPlayback();
-
-    recording = [];
-
-    updateRecordingDisplay();
-
-    updateRecordingStatus(
-        "Ready"
-    );
-
-    markUnsaved();
-}
-
-function updateOctave() {
-
-    octaveDisplay.textContent =
-        octave;
-
-    const whiteKeys =
-        document.querySelectorAll(
-            ".white-key"
-        );
-
-    const blackKeys =
-        document.querySelectorAll(
-            ".black-key"
-        );
-
-    const whiteNotes = [
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "A",
-        "B",
-        "C"
-    ];
-
-    const blackNotes = [
-        "C#",
-        "D#",
-        "F#",
-        "G#",
-        "A#"
-    ];
-
-    whiteKeys.forEach(
-        (key, index) => {
-
-            const noteOctave =
-                index === 7
-                    ? octave + 1
-                    : octave;
-
-            key.dataset.note =
-                whiteNotes[index] +
-                noteOctave;
-        }
-    );
-
-    blackKeys.forEach(
-        (key, index) => {
-
-            key.dataset.note =
-                blackNotes[index] +
-                octave;
-        }
-    );
-}
-
-document
-    .querySelectorAll(
-        ".white-key, .black-key"
-    )
-    .forEach(key => {
-
-        key.addEventListener(
-            "mousedown",
-            () => {
-
-                pressKey(
-                    key.dataset.note
-                );
-
-            }
-        );
-
-        key.addEventListener(
-            "mouseup",
-            () => {
-
-                releaseKey(
-                    key.dataset.note
-                );
-
-            }
-        );
-
-        key.addEventListener(
-            "mouseleave",
-            () => {
-
-                if (
-                    activeNotes.has(
-                        key.dataset.note
-                    )
-                ) {
-
-                    releaseKey(
-                        key.dataset.note
-                    );
-                }
-
-            }
-        );
-
+    activeNotes.forEach((_, note) => {
+        stopNote(note, 0.05);
     });
 
-document
-    .querySelectorAll(".bass-key")
-    .forEach(key => {
+    activeChords.clear();
 
-        key.addEventListener(
-            "mousedown",
-            () => {
+    if (playButton) {
+        playButton.textContent = "Play";
+        playButton.classList.remove("active");
+    }
 
-                pressBassKey(
-                    key.dataset.note
-                );
+    if (playRecordingButton) {
+        playRecordingButton.textContent = "Play Recording";
+        playRecordingButton.classList.remove("active");
+    }
 
-            }
-        );
+    if (recordingStatus && !isRecording) {
+        recordingStatus.textContent =
+            recording.length > 0
+                ? "Recording saved"
+                : "Ready";
+    }
+}
 
-        key.addEventListener(
-            "mouseup",
-            () => {
+function updateVolume() {
+    if (!volumeSlider) {
+        return;
+    }
 
-                releaseBassKey(
-                    key.dataset.note
-                );
+    masterVolume = Number(volumeSlider.value);
 
-            }
-        );
+    if (volumeDisplay) {
+        volumeDisplay.textContent =
+            `${Math.round(masterVolume * 100)}%`;
+    }
+}
 
-        key.addEventListener(
-            "mouseleave",
-            () => {
+function updateWaveform() {
+    if (!waveformSelect) {
+        return;
+    }
 
-                if (
-                    activeBassNotes.has(
-                        key.dataset.note
-                    )
-                ) {
+    waveform = waveformSelect.value;
+}
 
-                    releaseBassKey(
-                        key.dataset.note
-                    );
-                }
+function updateSustain() {
+    if (!sustainSlider) {
+        return;
+    }
 
-            }
-        );
+    sustain = Number(sustainSlider.value);
 
+    if (sustainDisplay) {
+        sustainDisplay.textContent =
+            `${sustain.toFixed(1)}s`;
+    }
+}
+
+function updateChordMode() {
+    if (!chordModeSelect) {
+        return;
+    }
+
+    chordMode = chordModeSelect.value;
+
+    activeChords.forEach((_, rootNote) => {
+        stopChord(rootNote);
+    });
+}
+
+function changeOctave(amount) {
+    const newOctave = Math.max(
+        2,
+        Math.min(5, octave + amount)
+    );
+
+    if (newOctave === octave) {
+        return;
+    }
+
+    activeNotes.forEach((_, note) => {
+        stopNote(note, 0.03);
     });
 
-document.addEventListener(
-    "keydown",
-    event => {
+    octave = newOctave;
 
-        if (event.repeat) {
-            return;
-        }
+    renderPiano();
+}
 
-        const key =
-            event.key.toLowerCase();
+function updateBpm(value) {
+    let newBpm = Number(value);
 
-        if (key === "k") {
-
-            pressKey(
-                "C" + (octave + 1)
-            );
-
-            return;
-        }
-
-        const noteName =
-            keyboardMap[key];
-
-        if (!noteName) {
-            return;
-        }
-
-        pressKey(
-            noteName + octave
-        );
-
+    if (!Number.isFinite(newBpm)) {
+        newBpm = bpm;
     }
-);
 
-document.addEventListener(
-    "keyup",
-    event => {
-
-        const key =
-            event.key.toLowerCase();
-
-        if (key === "k") {
-
-            releaseKey(
-                "C" + (octave + 1)
-            );
-
-            return;
-        }
-
-        const noteName =
-            keyboardMap[key];
-
-        if (!noteName) {
-            return;
-        }
-
-        releaseKey(
-            noteName + octave
-        );
-
-    }
-);
-
-volumeInput.addEventListener(
-    "input",
-    event => {
-
-        volume =
-            Number(event.target.value);
-
-        markUnsaved();
-    }
-);
-
-waveformInput.addEventListener(
-    "change",
-    event => {
-
-        waveform =
-            event.target.value;
-
-        markUnsaved();
-    }
-);
-
-sustainInput.addEventListener(
-    "input",
-    event => {
-
-        sustain =
-            Number(event.target.value);
-
-        markUnsaved();
-    }
-);
-
-document
-    .getElementById("octaveDown")
-    .addEventListener(
-        "click",
-        () => {
-
-            if (octave > 2) {
-
-                octave--;
-
-                updateOctave();
-
-                markUnsaved();
-            }
-
-        }
+    newBpm = Math.round(
+        Math.max(
+            MIN_BPM,
+            Math.min(MAX_BPM, newBpm)
+        )
     );
 
-document
-    .getElementById("octaveUp")
-    .addEventListener(
-        "click",
-        () => {
+    bpm = newBpm;
 
-            if (octave < 6) {
-
-                octave++;
-
-                updateOctave();
-
-                markUnsaved();
-            }
-
-        }
-    );
-
-recordButton.addEventListener(
-    "click",
-    () => {
-
-        if (isRecording) {
-
-            stopRecording();
-
-        } else {
-
-            startRecording();
-
-        }
-
+    if (bpmInput) {
+        bpmInput.value = bpm;
     }
-);
 
-playButton.addEventListener(
-    "click",
-    () => {
-
-        if (isPlaying) {
-
-            stopPlayback();
-
-            stopDrumSequencer();
-            stopMetronome();
-
-            updateRecordingStatus(
-                "Ready"
-            );
-
-            return;
-        }
-
-        if (recording.length > 0) {
-            playRecording();
-        }
-
-        if (drumPlaying) {
-
-            stopDrumSequencer();
-
-        } else {
-
-            startDrumSequencer();
-
-        }
-
-        if (metronomeEnabled) {
-            startMetronome();
-        }
-
+    if (bpmDisplay) {
+        bpmDisplay.textContent = `${bpm} BPM`;
     }
-);
 
-clearButton.addEventListener(
-    "click",
-    () => {
+    if (isDrumPlaying) {
+        stopDrums();
+        startDrums();
+    }
 
-        clearRecording();
-
-        document
-            .querySelectorAll(".step")
-            .forEach(step => {
-
-                step.classList.remove(
-                    "active"
-                );
-
-            });
-
-        stopDrumSequencer();
-
+    if (isMetronomeOn) {
         stopMetronome();
-
-        markUnsaved();
-
+        startMetronome();
     }
-);
+}
 
-const drumSteps =
-    document.querySelectorAll(
-        ".step"
-    );
+function getDrumStepLength() {
+    return (60 / bpm) * 250;
+}
 
-drumSteps.forEach(step => {
+function getDrumStepDelay(step) {
+    const baseLength = getDrumStepLength();
 
-    step.addEventListener(
-        "click",
-        () => {
-
-            step.classList.toggle(
-                "active"
-            );
-
-            const instrument =
-                step.dataset.instrument;
-
-            playDrum(instrument);
-
-            markUnsaved();
-
-        }
-    );
-
-});
-
-drumVolumeInput.addEventListener(
-    "input",
-    () => {
-
-        drumVolume =
-            Number(
-                drumVolumeInput.value
-            );
-
-        drumVolumeDisplay.textContent =
-            Math.round(
-                drumVolume * 100
-            ) + "%";
-
-        markUnsaved();
+    if (swing <= 0) {
+        return baseLength;
     }
-);
 
-const drumSounds = {
-    kick: 0.35,
-    snare: 0.25,
-    hihat: 0.15
-};
+    if (step % 2 === 0) {
+        return baseLength * (1 + swing);
+    }
+
+    return baseLength * (1 - swing);
+}
 
 function playKick() {
+    ensureAudio();
 
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gain =
-        audioContext.createGain();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
 
     oscillator.type = "sine";
 
@@ -1176,166 +894,97 @@ function playKick() {
     );
 
     oscillator.frequency.exponentialRampToValueAtTime(
-        50,
-        audioContext.currentTime + 0.15
+        45,
+        audioContext.currentTime + 0.18
     );
 
     gain.gain.setValueAtTime(
-        drumVolume *
-        drumSounds.kick,
+        Math.max(drumVolume, 0.001),
         audioContext.currentTime
     );
 
     gain.gain.exponentialRampToValueAtTime(
         0.001,
-        audioContext.currentTime + 0.15
+        audioContext.currentTime + 0.18
     );
 
     oscillator.connect(gain);
-
-    gain.connect(
-        audioContext.destination
-    );
+    gain.connect(audioContext.destination);
 
     oscillator.start();
 
     oscillator.stop(
-        audioContext.currentTime + 0.15
+        audioContext.currentTime + 0.2
     );
 }
 
 function playSnare() {
+    ensureAudio();
 
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gain =
-        audioContext.createGain();
-
-    oscillator.type =
-        "triangle";
-
-    oscillator.frequency.value =
-        180;
-
-    gain.gain.setValueAtTime(
-        drumVolume *
-        drumSounds.snare,
-        audioContext.currentTime
+    const noiseBuffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * 0.2),
+        audioContext.sampleRate
     );
 
-    gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime + 0.12
-    );
+    const data = noiseBuffer.getChannelData(0);
 
-    oscillator.connect(gain);
-
-    gain.connect(
-        audioContext.destination
-    );
-
-    oscillator.start();
-
-    oscillator.stop(
-        audioContext.currentTime + 0.12
-    );
-
-    const noiseBuffer =
-        audioContext.createBuffer(
-            1,
-            audioContext.sampleRate * 0.12,
-            audioContext.sampleRate
-        );
-
-    const noiseData =
-        noiseBuffer.getChannelData(0);
-
-    for (
-        let i = 0;
-        i < noiseData.length;
-        i++
-    ) {
-
-        noiseData[i] =
-            Math.random() * 2 - 1;
+    for (let i = 0; i < data.length; i++) {
+        data[i] = Math.random() * 2 - 1;
     }
 
-    const noise =
-        audioContext.createBufferSource();
+    const noise = audioContext.createBufferSource();
+    const noiseFilter = audioContext.createBiquadFilter();
+    const noiseGain = audioContext.createGain();
 
-    const noiseGain =
-        audioContext.createGain();
+    noise.buffer = noiseBuffer;
 
-    noise.buffer =
-        noiseBuffer;
+    noiseFilter.type = "highpass";
+    noiseFilter.frequency.value = 1200;
 
     noiseGain.gain.setValueAtTime(
-        drumVolume *
-        drumSounds.snare,
+        Math.max(drumVolume * 0.8, 0.001),
         audioContext.currentTime
     );
 
     noiseGain.gain.exponentialRampToValueAtTime(
         0.001,
-        audioContext.currentTime + 0.12
+        audioContext.currentTime + 0.2
     );
 
-    noise.connect(noiseGain);
-
-    noiseGain.connect(
-        audioContext.destination
-    );
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioContext.destination);
 
     noise.start();
 }
 
 function playHiHat() {
+    ensureAudio();
 
-    const bufferSize =
-        audioContext.sampleRate * 0.08;
+    const noiseBuffer = audioContext.createBuffer(
+        1,
+        Math.floor(audioContext.sampleRate * 0.08),
+        audioContext.sampleRate
+    );
 
-    const noiseBuffer =
-        audioContext.createBuffer(
-            1,
-            bufferSize,
-            audioContext.sampleRate
-        );
+    const data = noiseBuffer.getChannelData(0);
 
-    const noiseData =
-        noiseBuffer.getChannelData(0);
-
-    for (
-        let i = 0;
-        i < bufferSize;
-        i++
-    ) {
-
-        noiseData[i] =
-            Math.random() * 2 - 1;
+    for (let i = 0; i < data.length; i++) {
+        data[i] = Math.random() * 2 - 1;
     }
 
-    const noise =
-        audioContext.createBufferSource();
+    const noise = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
 
-    const filter =
-        audioContext.createBiquadFilter();
+    noise.buffer = noiseBuffer;
 
-    const gain =
-        audioContext.createGain();
-
-    noise.buffer =
-        noiseBuffer;
-
-    filter.type =
-        "highpass";
-
-    filter.frequency.value =
-        5000;
+    filter.type = "highpass";
+    filter.frequency.value = 5000;
 
     gain.gain.setValueAtTime(
-        drumVolume *
-        drumSounds.hihat,
+        Math.max(drumVolume * 0.5, 0.001),
         audioContext.currentTime
     );
 
@@ -1345,805 +994,1110 @@ function playHiHat() {
     );
 
     noise.connect(filter);
-
     filter.connect(gain);
-
-    gain.connect(
-        audioContext.destination
-    );
+    gain.connect(audioContext.destination);
 
     noise.start();
 }
 
-function playDrum(instrument) {
+function playDrumSound(type) {
+    ensureAudio();
 
-    if (
-        audioContext.state ===
-        "suspended"
-    ) {
+    switch (type) {
+        case "kick":
+            playKick();
+            break;
 
-        audioContext.resume();
+        case "snare":
+            playSnare();
+            break;
+
+        case "hihat":
+            playHiHat();
+            break;
+    }
+}
+
+function getDrumInstrument(row) {
+    const firstStep = row.querySelector(".step");
+
+    if (!firstStep) {
+        return null;
     }
 
-    if (instrument === "kick") {
-        playKick();
-    }
-
-    if (instrument === "snare") {
-        playSnare();
-    }
-
-    if (instrument === "hihat") {
-        playHiHat();
-    }
+    return firstStep.dataset.instrument || null;
 }
 
 function playDrumStep() {
+    const currentStep = drumStep + 1;
 
-    const steps =
-        document.querySelectorAll(
-            ".step"
+    drumRows.forEach(row => {
+        const activeStep = row.querySelector(
+            `.step[data-step="${currentStep}"]`
         );
 
-    steps.forEach(step => {
+        row.querySelectorAll(".step").forEach(step => {
+            step.classList.remove("playing");
+        });
 
-        step.classList.remove(
-            "playing"
-        );
+        if (!activeStep) {
+            return;
+        }
 
+        activeStep.classList.add("playing");
+
+        if (activeStep.classList.contains("active")) {
+            const instrument =
+                activeStep.dataset.instrument;
+
+            playDrumSound(instrument);
+        }
     });
 
-    const instruments = [
-        "kick",
-        "snare",
-        "hihat"
-    ];
-
-    instruments.forEach(
-        instrument => {
-
-            const step =
-                document.querySelector(
-                    `.step[data-instrument="${instrument}"][data-step="${currentStep + 1}"]`
-                );
-
-            if (!step) {
-                return;
-            }
-
-            if (
-                step.classList.contains(
-                    "active"
-                )
-            ) {
-
-                playDrum(
-                    instrument
-                );
-            }
-
-        }
-    );
-
-    const currentButtons =
-        document.querySelectorAll(
-            `.step[data-step="${currentStep + 1}"]`
-        );
-
-    currentButtons.forEach(
-        step => {
-
-            step.classList.add(
-                "playing"
-            );
-
-        }
-    );
-
-    updateMetronomeVisual();
-
-    currentStep++;
-
-    if (currentStep >= 8) {
-        currentStep = 0;
-    }
+    updateBeatIndicators();
 }
 
-function startDrumSequencer() {
-
-    if (drumPlaying) {
+function scheduleNextDrumStep() {
+    if (!isDrumPlaying) {
         return;
     }
 
-    drumPlaying = true;
-
-    currentStep = 0;
-
-    const beatLength =
-        60000 / bpm;
-
-    const stepLength =
-        beatLength / 2;
-
     playDrumStep();
 
-    drumInterval =
-        setInterval(
-            () => {
+    const delay = getDrumStepDelay(drumStep);
 
-                playDrumStep();
+    drumStep =
+        (drumStep + 1) % DRUM_STEPS;
 
-            },
-            stepLength
-        );
+    drumTimer = setTimeout(
+        scheduleNextDrumStep,
+        delay
+    );
 }
 
-function stopDrumSequencer() {
+function startDrums() {
+    ensureAudio();
 
-    drumPlaying = false;
-
-    clearInterval(
-        drumInterval
-    );
-
-    drumInterval = null;
-
-    currentStep = 0;
-
-    document
-        .querySelectorAll(".step")
-        .forEach(step => {
-
-            step.classList.remove(
-                "playing"
-            );
-
-        });
-}
-
-document
-    .getElementById("drumPlayButton")
-    .addEventListener(
-        "click",
-        () => {
-
-            startDrumSequencer();
-
-            if (metronomeEnabled) {
-                startMetronome();
-            }
-
-        }
-    );
-
-document
-    .getElementById("drumStopButton")
-    .addEventListener(
-        "click",
-        () => {
-
-            stopDrumSequencer();
-
-            stopMetronome();
-
-        }
-    );
-
-document
-    .getElementById("drumClearButton")
-    .addEventListener(
-        "click",
-        () => {
-
-            document
-                .querySelectorAll(".step")
-                .forEach(step => {
-
-                    step.classList.remove(
-                        "active"
-                    );
-
-                });
-
-            markUnsaved();
-
-        }
-    );
-
-function updateBPM(value) {
-
-    bpm =
-        Math.min(
-            240,
-            Math.max(
-                40,
-                Math.round(value)
-            )
-        );
-
-    bpmInput.value =
-        bpm;
-
-    bpmDisplay.textContent =
-        bpm + " BPM";
-
-    if (drumPlaying) {
-
-        stopDrumSequencer();
-
-        startDrumSequencer();
-
+    if (isDrumPlaying) {
+        return;
     }
 
-    if (metronomeEnabled) {
+    isDrumPlaying = true;
+    drumStep = 0;
 
-        startMetronome();
+    if (drumPlayButton) {
+        drumPlayButton.textContent = "Playing";
+        drumPlayButton.classList.add("active");
+    }
 
+    scheduleNextDrumStep();
+}
+
+function stopDrums() {
+    isDrumPlaying = false;
+
+    clearTimeout(drumTimer);
+    drumTimer = null;
+
+    drumRows.forEach(row => {
+        row.querySelectorAll(".step").forEach(step => {
+            step.classList.remove("playing");
+        });
+    });
+
+    if (drumPlayButton) {
+        drumPlayButton.textContent = "Play";
+        drumPlayButton.classList.remove("active");
+    }
+}
+
+function clearDrums() {
+    drumRows.forEach(row => {
+        row.querySelectorAll(".step").forEach(step => {
+            step.classList.remove("active");
+            step.classList.remove("playing");
+        });
+    });
+}
+
+function updateDrumVolume() {
+    if (!drumVolumeSlider) {
+        return;
+    }
+
+    drumVolume = Number(drumVolumeSlider.value);
+
+    if (drumVolumeDisplay) {
+        drumVolumeDisplay.textContent =
+            `${Math.round(drumVolume * 100)}%`;
+    }
+}
+
+function updateSwing() {
+    if (!swingSlider) {
+        return;
+    }
+
+    swing = Number(swingSlider.value) / 100;
+
+    if (swingDisplay) {
+        swingDisplay.textContent =
+            `${Math.round(swing * 100)}%`;
+    }
+}
+
+function toggleDrumStep(stepElement) {
+    stepElement.classList.toggle("active");
+}
+
+function setDrumPattern(pattern) {
+    const rows = {
+        kick: pattern.kick || [],
+        snare: pattern.snare || [],
+        hihat: pattern.hihat || []
+    };
+
+    drumRows.forEach(row => {
+        const type = getDrumInstrument(row);
+
+        if (!type) {
+            return;
+        }
+
+        const activeSteps = rows[type] || [];
+
+        row.querySelectorAll(".step").forEach(
+            (step, index) => {
+                step.classList.toggle(
+                    "active",
+                    activeSteps.includes(index + 1)
+                );
+            }
+        );
+    });
+}
+
+function applyDrumPreset(name) {
+    if (name === "basic") {
+        setDrumPattern({
+            kick: [1, 5, 9, 13],
+            snare: [5, 13],
+            hihat: [1, 3, 5, 7, 9, 11, 13, 15]
+        });
+    }
+
+    if (name === "house") {
+        setDrumPattern({
+            kick: [1, 5, 9, 13],
+            snare: [5, 13],
+            hihat: [
+                1, 2, 3, 4,
+                5, 6, 7, 8,
+                9, 10, 11, 12,
+                13, 14, 15, 16
+            ]
+        });
+    }
+
+    if (name === "break") {
+        setDrumPattern({
+            kick: [1, 7, 9, 12],
+            snare: [5, 13, 15],
+            hihat: [1, 3, 5, 7, 9, 11, 13, 15]
+        });
     }
 
     markUnsaved();
 }
 
-bpmInput.addEventListener(
-    "input",
-    () => {
+function updateBeatIndicators() {
+    const indicators =
+        document.querySelectorAll(".beat");
 
-        const value =
-            Number(
-                bpmInput.value
-            );
-
-        if (
-            !Number.isFinite(value)
-        ) {
-            return;
-        }
-
-        updateBPM(value);
-
-    }
-);
-
-bpmDown.addEventListener(
-    "click",
-    () => {
-
-        updateBPM(
-            bpm - 5
+    indicators.forEach((indicator, index) => {
+        indicator.classList.toggle(
+            "active",
+            index === drumStep % 4
         );
-
-    }
-);
-
-bpmUp.addEventListener(
-    "click",
-    () => {
-
-        updateBPM(
-            bpm + 5
-        );
-
-    }
-);
-
-function registerTap() {
-
-    const now =
-        performance.now();
-
-    if (
-        tapTimes.length > 0 &&
-        now - tapTimes[
-            tapTimes.length - 1
-        ] > 2000
-    ) {
-
-        tapTimes = [];
-    }
-
-    tapTimes.push(now);
-
-    clearTimeout(
-        tapResetTimeout
-    );
-
-    tapResetTimeout =
-        setTimeout(
-            () => {
-
-                tapTimes = [];
-
-                tapTempoDisplay.textContent =
-                    "0 taps";
-
-                tapTempoButton.classList.remove(
-                    "active"
-                );
-
-            },
-            2000
-        );
-
-    tapTempoDisplay.textContent =
-        tapTimes.length +
-        " taps";
-
-    tapTempoButton.classList.add(
-        "active"
-    );
-
-    if (tapTimes.length >= 2) {
-
-        let intervals = [];
-
-        for (
-            let i = 1;
-            i < tapTimes.length;
-            i++
-        ) {
-
-            intervals.push(
-                tapTimes[i] -
-                tapTimes[i - 1]
-            );
-        }
-
-        const averageInterval =
-            intervals.reduce(
-                (total, interval) =>
-                    total + interval,
-                0
-            ) / intervals.length;
-
-        const calculatedBPM =
-            60000 /
-            averageInterval;
-
-        updateBPM(
-            calculatedBPM
-        );
-    }
+    });
 }
 
-tapTempoButton.addEventListener(
-    "click",
-    registerTap
-);
-
-function playMetronomeClick(
-    isFirstBeat = false
-) {
-
-    if (!metronomeEnabled) {
-        return;
-    }
-
-    if (
-        audioContext.state ===
-        "suspended"
-    ) {
-
-        audioContext.resume();
-    }
+function playMetronomeClick() {
+    ensureAudio();
 
     const oscillator =
         audioContext.createOscillator();
 
-    const gain =
+    const gainNode =
         audioContext.createGain();
 
-    oscillator.type =
-        "square";
+    oscillator.type = "square";
 
-    oscillator.frequency.value =
-        isFirstBeat
-            ? 1200
-            : 800;
+    const accent = metronomeBeat === 0;
 
-    gain.gain.setValueAtTime(
-        0.15,
+    oscillator.frequency.setValueAtTime(
+        accent ? 1200 : 800,
         audioContext.currentTime
     );
 
-    gain.gain.exponentialRampToValueAtTime(
+    gainNode.gain.setValueAtTime(
+        accent ? 0.2 : 0.1,
+        audioContext.currentTime
+    );
+
+    gainNode.gain.exponentialRampToValueAtTime(
         0.001,
-        audioContext.currentTime + 0.06
+        audioContext.currentTime + 0.05
     );
 
-    oscillator.connect(gain);
-
-    gain.connect(
-        audioContext.destination
-    );
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
 
     oscillator.start();
 
     oscillator.stop(
         audioContext.currentTime + 0.06
     );
+
+    metronomeBeat =
+        (metronomeBeat + 1) % 4;
+
+    updateBeatIndicators();
 }
 
 function startMetronome() {
-
-    if (!metronomeEnabled) {
+    if (isMetronomeOn) {
         return;
     }
 
-    stopMetronome();
+    ensureAudio();
 
+    isMetronomeOn = true;
     metronomeBeat = 0;
 
-    playMetronomeClick(true);
+    if (metronomeButton) {
+        metronomeButton.textContent =
+            "Metronome On";
 
-    updateMetronomeVisual();
+        metronomeButton.classList.add("active");
+    }
 
-    const beatLength =
-        60000 / bpm;
+    playMetronomeClick();
 
-    metronomeInterval =
-        setInterval(
-            () => {
+    const interval =
+        (60 / bpm) * 1000;
 
-                metronomeBeat++;
-
-                if (
-                    metronomeBeat >= 4
-                ) {
-
-                    metronomeBeat = 0;
-                }
-
-                playMetronomeClick(
-                    metronomeBeat === 0
-                );
-
-                updateMetronomeVisual();
-
-            },
-            beatLength
-        );
+    metronomeTimer = setInterval(
+        playMetronomeClick,
+        interval
+    );
 }
 
 function stopMetronome() {
+    isMetronomeOn = false;
 
-    clearInterval(
-        metronomeInterval
-    );
+    clearInterval(metronomeTimer);
+    metronomeTimer = null;
 
-    metronomeInterval = null;
+    if (metronomeButton) {
+        metronomeButton.textContent =
+            "Metronome";
 
-    metronomeBeat = 0;
-
-    updateMetronomeVisual();
-}
-
-function updateMetronomeVisual() {
-
-    const beats =
-        document.querySelectorAll(
-            "#metronomeBeatDisplay span"
-        );
-
-    beats.forEach(
-        (beat, index) => {
-
-            beat.classList.toggle(
-                "active",
-                metronomeEnabled &&
-                index === metronomeBeat
-            );
-
-        }
-    );
-}
-
-metronomeButton.addEventListener(
-    "click",
-    () => {
-
-        metronomeEnabled =
-            !metronomeEnabled;
-
-        if (metronomeEnabled) {
-
-            metronomeButton.textContent =
-                "Metronome: On";
-
-            metronomeButton.classList.add(
-                "active"
-            );
-
-            if (drumPlaying) {
-                startMetronome();
-            } else {
-                startMetronome();
-            }
-
-        } else {
-
-            metronomeButton.textContent =
-                "Metronome: Off";
-
-            metronomeButton.classList.remove(
-                "active"
-            );
-
-            stopMetronome();
-
-        }
-
-        markUnsaved();
+        metronomeButton.classList.remove("active");
     }
-);
+}
 
-const SAVE_KEY =
-    "grooveProject";
+function tapTempo() {
+    const now = performance.now();
 
-function getProjectData() {
+    if (
+        tapTimes.length > 0 &&
+        now - tapTimes[tapTimes.length - 1] > 2000
+    ) {
+        tapTimes = [];
+    }
 
-    const drumPattern = [];
+    tapTimes.push(now);
 
-    document
-        .querySelectorAll(".step")
-        .forEach(step => {
+    if (tapTimes.length > 6) {
+        tapTimes.shift();
+    }
 
-            drumPattern.push({
-                instrument:
-                    step.dataset.instrument,
+    clearTimeout(tapResetTimer);
 
-                step:
-                    Number(
-                        step.dataset.step
-                    ),
+    tapResetTimer = setTimeout(() => {
+        tapTimes = [];
+    }, 2000);
 
-                active:
-                    step.classList.contains(
-                        "active"
-                    )
-            });
+    if (tapTimes.length >= 2) {
+        let total = 0;
 
-        });
+        for (let i = 1; i < tapTimes.length; i++) {
+            total +=
+                tapTimes[i] - tapTimes[i - 1];
+        }
 
+        const average =
+            total / (tapTimes.length - 1);
+
+        const calculatedBpm =
+            60000 / average;
+
+        updateBpm(calculatedBpm);
+
+        if (tapTempoDisplay) {
+            tapTempoDisplay.textContent =
+                `${Math.round(bpm)} BPM`;
+        }
+    } else if (tapTempoDisplay) {
+        tapTempoDisplay.textContent =
+            "Tap again";
+    }
+}
+
+function getDrumPattern() {
+    const pattern = {
+        kick: [],
+        snare: [],
+        hihat: []
+    };
+
+    drumRows.forEach(row => {
+        const type = getDrumInstrument(row);
+
+        if (!type || !pattern[type]) {
+            return;
+        }
+
+        row.querySelectorAll(".step").forEach(
+            (step, index) => {
+                if (step.classList.contains("active")) {
+                    pattern[type].push(index + 1);
+                }
+            }
+        );
+    });
+
+    return pattern;
+}
+
+function getSaveData() {
     return {
-
-        version: "1.6",
-
-        recording: recording,
-
-        settings: {
-            volume: volume,
-            waveform: waveform,
-            octave: octave,
-            sustain: sustain,
-            bpm: bpm,
-            drumVolume: drumVolume,
-            metronomeEnabled:
-                metronomeEnabled
-        },
-
-        drumPattern: drumPattern
-
+        version: "1.8",
+        bpm,
+        octave,
+        masterVolume,
+        drumVolume,
+        waveform,
+        sustain,
+        swing,
+        chordMode,
+        recording,
+        drumPattern: getDrumPattern()
     };
 }
 
-function saveProject() {
+function markUnsaved() {
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Unsaved changes";
+    }
+}
 
-    const project =
-        getProjectData();
+function saveProject() {
+    const data = getSaveData();
 
     localStorage.setItem(
-        SAVE_KEY,
-        JSON.stringify(project)
+        "grooveProject",
+        JSON.stringify(data)
     );
 
-    markSaved();
-
-    saveStatus.textContent =
-        "Saved just now";
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Project saved";
+    }
 }
 
 function loadProject() {
-
     const saved =
-        localStorage.getItem(
-            SAVE_KEY
-        );
+        localStorage.getItem("grooveProject");
 
     if (!saved) {
-
-        saveStatus.textContent =
-            "No saved project";
+        if (saveStatus) {
+            saveStatus.textContent =
+                "No saved project";
+        }
 
         return;
     }
 
     try {
+        const data = JSON.parse(saved);
 
-        const project =
-            JSON.parse(saved);
+        if (data.bpm !== undefined) {
+            updateBpm(data.bpm);
+        }
 
-        stopPlayback();
+        if (data.octave !== undefined) {
+            octave = Math.max(
+                2,
+                Math.min(5, Number(data.octave))
+            );
 
-        stopDrumSequencer();
+            renderPiano();
+        }
 
-        stopMetronome();
+        if (data.masterVolume !== undefined) {
+            masterVolume =
+                Number(data.masterVolume);
+
+            if (volumeSlider) {
+                volumeSlider.value =
+                    masterVolume;
+            }
+
+            updateVolume();
+        }
+
+        if (data.drumVolume !== undefined) {
+            drumVolume =
+                Number(data.drumVolume);
+
+            if (drumVolumeSlider) {
+                drumVolumeSlider.value =
+                    drumVolume;
+            }
+
+            updateDrumVolume();
+        }
+
+        if (data.waveform !== undefined) {
+            waveform = data.waveform;
+
+            if (waveformSelect) {
+                waveformSelect.value =
+                    waveform;
+            }
+        }
+
+        if (data.sustain !== undefined) {
+            sustain =
+                Number(data.sustain);
+
+            if (sustainSlider) {
+                sustainSlider.value =
+                    sustain;
+            }
+
+            updateSustain();
+        }
+
+        if (data.swing !== undefined) {
+            swing =
+                Number(data.swing);
+
+            if (swingSlider) {
+                swingSlider.value =
+                    swing * 100;
+            }
+
+            updateSwing();
+        }
+
+        if (data.chordMode !== undefined) {
+            chordMode =
+                data.chordMode;
+
+            if (chordModeSelect) {
+                chordModeSelect.value =
+                    chordMode;
+            }
+        }
 
         recording =
-            project.recording || [];
+            Array.isArray(data.recording)
+                ? data.recording
+                : [];
 
-        const settings =
-            project.settings || {};
-
-        volume =
-            settings.volume ?? 0.35;
-
-        waveform =
-            settings.waveform ?? "sine";
-
-        octave =
-            settings.octave ?? 4;
-
-        sustain =
-            settings.sustain ?? 0.7;
-
-        bpm =
-            settings.bpm ?? 120;
-
-        drumVolume =
-            settings.drumVolume ?? 0.35;
-
-        metronomeEnabled =
-            settings.metronomeEnabled ?? false;
-
-        volumeInput.value =
-            volume;
-
-        waveformInput.value =
-            waveform;
-
-        sustainInput.value =
-            sustain;
-
-        bpmInput.value =
-            bpm;
-
-        bpmDisplay.textContent =
-            bpm + " BPM";
-
-        drumVolumeInput.value =
-            drumVolume;
-
-        drumVolumeDisplay.textContent =
-            Math.round(
-                drumVolume * 100
-            ) + "%";
-
-        octaveDisplay.textContent =
-            octave;
-
-        updateOctave();
-
-        document
-            .querySelectorAll(".step")
-            .forEach(step => {
-
-                step.classList.remove(
-                    "active"
-                );
-
-            });
-
-        if (project.drumPattern) {
-
-            project.drumPattern.forEach(
-                savedStep => {
-
-                    if (
-                        savedStep.active
-                    ) {
-
-                        const step =
-                            document.querySelector(
-                                `.step[data-instrument="${savedStep.instrument}"][data-step="${savedStep.step}"]`
-                            );
-
-                        if (step) {
-
-                            step.classList.add(
-                                "active"
-                            );
-                        }
-                    }
-
-                }
+        if (data.drumPattern) {
+            setDrumPattern(
+                data.drumPattern
             );
         }
 
         updateRecordingDisplay();
 
-        updateRecordingStatus(
-            recording.length > 0
-                ? "Recording loaded"
-                : "Ready"
-        );
-
-        metronomeButton.classList.toggle(
-            "active",
-            metronomeEnabled
-        );
-
-        metronomeButton.textContent =
-            metronomeEnabled
-                ? "Metronome: On"
-                : "Metronome: Off";
-
-        markSaved();
-
-        saveStatus.textContent =
-            "Loaded";
-
+        if (saveStatus) {
+            saveStatus.textContent =
+                "Project loaded";
+        }
     } catch (error) {
-
-        console.error(
-            "Could not load project:",
-            error
-        );
-
-        saveStatus.textContent =
-            "Load failed";
+        if (saveStatus) {
+            saveStatus.textContent =
+                "Could not load project";
+        }
     }
 }
 
 function deleteSavedProject() {
+    localStorage.removeItem(
+        "grooveProject"
+    );
 
-    const confirmed =
-        confirm(
-            "Delete the saved Groove project?"
-        );
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Saved project deleted";
+    }
+}
 
-    if (!confirmed) {
+function handleKeyboardDown(event) {
+    if (
+        event.target.tagName === "INPUT" ||
+        event.target.tagName === "SELECT" ||
+        event.target.tagName === "TEXTAREA"
+    ) {
         return;
     }
 
-    localStorage.removeItem(
-        SAVE_KEY
+    const key =
+        event.key.toLowerCase();
+
+    if (event.repeat) {
+        return;
+    }
+
+    if (key === "z") {
+        changeOctave(-1);
+        return;
+    }
+
+    if (key === "x") {
+        changeOctave(1);
+        return;
+    }
+
+    const note =
+        getRootNoteFromKeyboardKey(key);
+
+    if (!note) {
+        return;
+    }
+
+    const pianoKey =
+        findPianoKey(note);
+
+    if (!pianoKey) {
+        return;
+    }
+
+    event.preventDefault();
+
+    playPianoKey(
+        note,
+        pianoKey
     );
 
-    saveStatus.textContent =
-        "Save deleted";
-
-    markUnsaved();
+    pianoKey.dataset.keyboardPressed =
+        "true";
 }
 
-saveButton.addEventListener(
-    "click",
-    saveProject
+function handleKeyboardUp(event) {
+    const key =
+        event.key.toLowerCase();
+
+    const note =
+        getRootNoteFromKeyboardKey(key);
+
+    if (!note) {
+        return;
+    }
+
+    const pianoKey =
+        findPianoKey(note);
+
+    if (!pianoKey) {
+        return;
+    }
+
+    releasePianoKey(
+        note,
+        pianoKey
+    );
+
+    delete pianoKey.dataset.keyboardPressed;
+}
+
+function playBassNote(note, keyElement) {
+    ensureAudio();
+
+    const frequency =
+        getNoteFrequency(note);
+
+    if (!frequency) {
+        return;
+    }
+
+    if (activeBassNotes.has(note)) {
+        stopBassNote(
+            note,
+            keyElement
+        );
+    }
+
+    const oscillator =
+        audioContext.createOscillator();
+
+    const gainNode =
+        audioContext.createGain();
+
+    oscillator.type = "sawtooth";
+
+    oscillator.frequency.setValueAtTime(
+        frequency,
+        audioContext.currentTime
+    );
+
+    gainNode.gain.setValueAtTime(
+        Math.max(
+            masterVolume * 0.45,
+            0.001
+        ),
+        audioContext.currentTime
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+
+    activeBassNotes.set(note, {
+        oscillator,
+        gainNode
+    });
+
+    if (keyElement) {
+        keyElement.classList.add(
+            "pressed"
+        );
+    }
+
+    if (currentBassNote) {
+        currentBassNote.textContent =
+            note;
+    }
+}
+
+function stopBassNote(note, keyElement) {
+    const active =
+        activeBassNotes.get(note);
+
+    if (active) {
+        const now =
+            audioContext.currentTime;
+
+        active.gainNode.gain.cancelScheduledValues(
+            now
+        );
+
+        active.gainNode.gain.setValueAtTime(
+            Math.max(
+                active.gainNode.gain.value,
+                0.001
+            ),
+            now
+        );
+
+        active.gainNode.gain.exponentialRampToValueAtTime(
+            0.001,
+            now + 0.15
+        );
+
+        try {
+            active.oscillator.stop(
+                now + 0.17
+            );
+        } catch (error) {
+        }
+
+        activeBassNotes.delete(note);
+    }
+
+    if (keyElement) {
+        keyElement.classList.remove(
+            "pressed"
+        );
+    }
+
+    if (currentBassNote) {
+        currentBassNote.textContent =
+            "—";
+    }
+}
+
+function bindBassEvents() {
+    const bassKeys =
+        document.querySelectorAll(
+            ".bass-key"
+        );
+
+    bassKeys.forEach(key => {
+        const note =
+            key.dataset.note;
+
+        if (!note) {
+            return;
+        }
+
+        key.addEventListener(
+            "pointerdown",
+            event => {
+                event.preventDefault();
+
+                playBassNote(
+                    note,
+                    key
+                );
+            }
+        );
+
+        key.addEventListener(
+            "pointerup",
+            event => {
+                event.preventDefault();
+
+                stopBassNote(
+                    note,
+                    key
+                );
+            }
+        );
+
+        key.addEventListener(
+            "pointercancel",
+            event => {
+                event.preventDefault();
+
+                stopBassNote(
+                    note,
+                    key
+                );
+            }
+        );
+
+        key.addEventListener(
+            "pointerleave",
+            event => {
+                if (event.buttons === 1) {
+                    stopBassNote(
+                        note,
+                        key
+                    );
+                }
+            }
+        );
+    });
+}
+
+document.addEventListener(
+    "keydown",
+    handleKeyboardDown
 );
 
-loadButton.addEventListener(
-    "click",
-    loadProject
+document.addEventListener(
+    "keyup",
+    handleKeyboardUp
 );
 
-deleteSaveButton.addEventListener(
-    "click",
-    deleteSavedProject
-);
+if (volumeSlider) {
+    volumeSlider.addEventListener(
+        "input",
+        () => {
+            updateVolume();
+            markUnsaved();
+        }
+    );
+}
 
-updateOctave();
+if (waveformSelect) {
+    waveformSelect.addEventListener(
+        "change",
+        () => {
+            updateWaveform();
+            markUnsaved();
+        }
+    );
+}
 
+if (sustainSlider) {
+    sustainSlider.addEventListener(
+        "input",
+        () => {
+            updateSustain();
+            markUnsaved();
+        }
+    );
+}
+
+if (chordModeSelect) {
+    chordModeSelect.addEventListener(
+        "change",
+        () => {
+            updateChordMode();
+            markUnsaved();
+        }
+    );
+}
+
+if (octaveDown) {
+    octaveDown.addEventListener(
+        "click",
+        () => {
+            changeOctave(-1);
+            markUnsaved();
+        }
+    );
+}
+
+if (octaveUp) {
+    octaveUp.addEventListener(
+        "click",
+        () => {
+            changeOctave(1);
+            markUnsaved();
+        }
+    );
+}
+
+if (recordButton) {
+    recordButton.addEventListener(
+        "click",
+        toggleRecording
+    );
+}
+
+if (clearButton) {
+    clearButton.addEventListener(
+        "click",
+        clearRecording
+    );
+}
+
+if (playButton) {
+    playButton.addEventListener(
+        "click",
+        () => {
+            if (isPlaying) {
+                stopRecordingPlayback();
+            } else {
+                playRecording();
+            }
+        }
+    );
+}
+
+if (playRecordingButton) {
+    playRecordingButton.addEventListener(
+        "click",
+        () => {
+            if (isPlaying) {
+                stopRecordingPlayback();
+            } else {
+                playRecording();
+            }
+        }
+    );
+}
+
+if (stopRecordingButton) {
+    stopRecordingButton.addEventListener(
+        "click",
+        stopRecordingPlayback
+    );
+}
+
+if (bpmInput) {
+    bpmInput.addEventListener(
+        "change",
+        () => {
+            updateBpm(
+                bpmInput.value
+            );
+
+            markUnsaved();
+        }
+    );
+}
+
+if (bpmDown) {
+    bpmDown.addEventListener(
+        "click",
+        () => {
+            updateBpm(bpm - 5);
+            markUnsaved();
+        }
+    );
+}
+
+if (bpmUp) {
+    bpmUp.addEventListener(
+        "click",
+        () => {
+            updateBpm(bpm + 5);
+            markUnsaved();
+        }
+    );
+}
+
+if (drumPlayButton) {
+    drumPlayButton.addEventListener(
+        "click",
+        startDrums
+    );
+}
+
+if (drumStopButton) {
+    drumStopButton.addEventListener(
+        "click",
+        stopDrums
+    );
+}
+
+if (drumClearButton) {
+    drumClearButton.addEventListener(
+        "click",
+        () => {
+            clearDrums();
+            markUnsaved();
+        }
+    );
+}
+
+if (drumVolumeSlider) {
+    drumVolumeSlider.addEventListener(
+        "input",
+        () => {
+            updateDrumVolume();
+            markUnsaved();
+        }
+    );
+}
+
+if (swingSlider) {
+    swingSlider.addEventListener(
+        "input",
+        () => {
+            updateSwing();
+            markUnsaved();
+        }
+    );
+}
+
+drumRows.forEach(row => {
+    row.querySelectorAll(".step").forEach(
+        step => {
+            step.addEventListener(
+                "click",
+                () => {
+                    toggleDrumStep(step);
+
+                    playDrumSound(
+                        step.dataset.instrument
+                    );
+
+                    markUnsaved();
+                }
+            );
+        }
+    );
+});
+
+document.querySelectorAll(
+    "[data-preset]"
+).forEach(button => {
+    button.addEventListener(
+        "click",
+        () => {
+            applyDrumPreset(
+                button.dataset.preset
+            );
+        }
+    );
+});
+
+if (metronomeButton) {
+    metronomeButton.addEventListener(
+        "click",
+        () => {
+            if (isMetronomeOn) {
+                stopMetronome();
+            } else {
+                startMetronome();
+            }
+        }
+    );
+}
+
+if (tapTempoButton) {
+    tapTempoButton.addEventListener(
+        "click",
+        tapTempo
+    );
+}
+
+if (saveButton) {
+    saveButton.addEventListener(
+        "click",
+        saveProject
+    );
+}
+
+if (loadButton) {
+    loadButton.addEventListener(
+        "click",
+        loadProject
+    );
+}
+
+if (deleteSaveButton) {
+    deleteSaveButton.addEventListener(
+        "click",
+        deleteSavedProject
+    );
+}
+
+renderPiano();
+
+bindBassEvents();
+
+updateVolume();
+updateSustain();
+updateDrumVolume();
+updateSwing();
+updateBpm(bpm);
 updateRecordingDisplay();
 
-updateRecordingStatus(
-    "Ready"
+window.addEventListener(
+    "beforeunload",
+    () => {
+        stopDrums();
+        stopMetronome();
+        stopRecordingPlayback();
+
+        activeNotes.forEach(
+            (_, note) => {
+                stopNote(
+                    note,
+                    0.01
+                );
+            }
+        );
+
+        activeBassNotes.forEach(
+            (_, note) => {
+                stopBassNote(
+                    note
+                );
+            }
+        );
+    }
 );
-
-bpmDisplay.textContent =
-    bpm + " BPM";
-
-drumVolumeDisplay.textContent =
-    Math.round(
-        drumVolume * 100
-    ) + "%";
-
-markUnsaved();

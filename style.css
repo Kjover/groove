@@ -9,7 +9,6 @@
     --lemon-lime: #D9DF36;
     --green-yellow: #AFFF3E;
     --yellow-green: #B4D44D;
-
     --honeydew: #E6F5E2;
     --celadon: #A4E3A4;
     --fern: #337738;
@@ -17,10 +16,8 @@
     --deep-forest: #224F10;
     --ebony: #3E4C35;
     --dark-khaki-green: #282900;
-
     --soft-ivory: #EAFFD0;
     --jet-black: #0F0F0F;
-
     --khaki: #B5AD7A;
     --dark-khaki: #77724F;
 }
@@ -59,6 +56,13 @@ button {
     cursor: pointer;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--canary-yellow);
+    outline-offset: 2px;
+}
+
 .top-bar {
     display: flex;
     justify-content: space-between;
@@ -73,7 +77,8 @@ button {
     border-bottom: 2px solid var(--green-yellow);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
 }
 
 .top-bar h1 {
@@ -91,13 +96,16 @@ button {
 .transport {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .transport button,
 .piano-control button,
 .drum-controls button,
 .control-panel button,
-.project-controls button {
+.project-controls button,
+.recording-controls button {
     padding: 9px 16px;
     border-radius: 7px;
     background:
@@ -119,7 +127,8 @@ button {
 .piano-control button:hover,
 .drum-controls button:hover,
 .control-panel button:hover,
-.project-controls button:hover {
+.project-controls button:hover,
+.recording-controls button:hover {
     background:
         linear-gradient(
             145deg,
@@ -133,12 +142,38 @@ button {
 .piano-control button:active,
 .drum-controls button:active,
 .control-panel button:active,
-.project-controls button:active {
+.project-controls button:active,
+.recording-controls button:active {
     transform: translateY(2px);
 }
 
+#recordButton.recording {
+    background:
+        linear-gradient(
+            145deg,
+            #8f3028,
+            #c44732
+        );
+    border-color: #ff725f;
+}
+
+#recordButton.recording::before {
+    content: "●";
+    margin-right: 6px;
+}
+
+#playButton.playing {
+    background:
+        linear-gradient(
+            145deg,
+            var(--green-yellow),
+            var(--yellow-green)
+        );
+    color: var(--jet-black);
+}
+
 main {
-    width: min(1100px, 90%);
+    width: min(1150px, 90%);
     margin: 40px auto;
 }
 
@@ -279,6 +314,10 @@ input[type="range"] {
         box-shadow 0.08s;
 }
 
+.white-key:last-child {
+    border-right: none;
+}
+
 .white-key:hover {
     background:
         linear-gradient(
@@ -311,7 +350,6 @@ input[type="range"] {
     line-height: 1;
 }
 
-.white-key:active,
 .white-key.active {
     background:
         linear-gradient(
@@ -369,13 +407,6 @@ input[type="range"] {
         );
 }
 
-.black-key small {
-    font-size: 11px;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.black-key:active,
 .black-key.active {
     background:
         linear-gradient(
@@ -455,6 +486,12 @@ input[type="range"] {
     color: var(--honeydew);
 }
 
+.keyboard-extra {
+    margin-top: 10px;
+    color: var(--celadon);
+    font-size: 12px;
+}
+
 .recording-panel {
     margin-top: 16px;
     background:
@@ -483,6 +520,18 @@ input[type="range"] {
     color: var(--green-yellow);
 }
 
+.recording-info {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+    color: var(--celadon);
+    font-size: 13px;
+}
+
+.recording-info strong {
+    color: var(--green-yellow);
+}
+
 .recording-display {
     min-height: 42px;
     padding: 10px;
@@ -496,6 +545,14 @@ input[type="range"] {
     color: var(--honeydew);
     font-size: 13px;
     line-height: 1.6;
+    overflow-x: auto;
+}
+
+.recording-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    flex-wrap: wrap;
 }
 
 .bass-keyboard {
@@ -533,7 +590,6 @@ input[type="range"] {
         );
 }
 
-.bass-key:active,
 .bass-key.active {
     background:
         linear-gradient(
@@ -572,6 +628,7 @@ input[type="range"] {
     display: flex;
     flex-direction: column;
     width: 100%;
+    overflow-x: auto;
 }
 
 .drum-row {
@@ -579,7 +636,7 @@ input[type="range"] {
     align-items: center;
     gap: 18px;
     width: 100%;
-    margin-bottom: 18px;
+    margin-bottom: 14px;
 }
 
 .drum-name {
@@ -591,8 +648,8 @@ input[type="range"] {
 
 .steps {
     display: grid;
-    grid-template-columns: repeat(8, minmax(42px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(16, minmax(34px, 1fr));
+    gap: 7px;
     flex: 1;
     min-width: 0;
 }
@@ -641,6 +698,23 @@ input[type="range"] {
 .step.playing {
     box-shadow:
         0 0 0 2px var(--canary-yellow) inset;
+}
+
+.step:nth-child(4n + 1) {
+    border-left-color: var(--green-yellow);
+}
+
+.step-number-row {
+    display: grid;
+    grid-template-columns: 70px repeat(16, minmax(34px, 1fr));
+    gap: 7px;
+    margin-bottom: 8px;
+}
+
+.step-number {
+    text-align: center;
+    color: var(--celadon);
+    font-size: 10px;
 }
 
 .control-panel {
@@ -716,6 +790,29 @@ input[type="range"] {
     font-size: 13px;
 }
 
+.studio-options {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.studio-options label {
+    color: var(--honeydew);
+    font-size: 14px;
+}
+
+.toggle-button.active {
+    background:
+        linear-gradient(
+            145deg,
+            var(--green-yellow),
+            var(--yellow-green)
+        );
+    color: var(--jet-black);
+    border-color: var(--green-yellow);
+}
+
 .project-controls {
     display: flex;
     flex-wrap: wrap;
@@ -753,6 +850,20 @@ footer {
     padding: 20px;
     color: var(--fern);
     font-size: 13px;
+}
+
+@media (max-width: 900px) {
+    .steps {
+        min-width: 700px;
+    }
+
+    .step-number-row {
+        min-width: 700px;
+    }
+
+    .drum-machine {
+        overflow-x: auto;
+    }
 }
 
 @media (max-width: 700px) {
@@ -798,15 +909,6 @@ footer {
         font-size: 10px;
     }
 
-    .steps {
-        gap: 5px;
-        grid-template-columns: repeat(8, minmax(25px, 1fr));
-    }
-
-    .step {
-        height: 35px;
-    }
-
     .drum-row {
         gap: 8px;
     }
@@ -831,6 +933,10 @@ footer {
     }
 
     .drum-volume {
+        margin-left: 0;
+    }
+
+    .studio-options {
         margin-left: 0;
     }
 }
