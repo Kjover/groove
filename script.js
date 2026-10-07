@@ -13,6 +13,7 @@ let isPlaying = false;
 let isRecording = false;
 let isDrumPlaying = false;
 let isMetronomeOn = false;
+let masterMuted = false;
 
 let recording = [];
 let recordingStartTime = 0;
@@ -27,16 +28,128 @@ let activeBassNotes = new Map();
 
 let drumStep = 0;
 let drumTimer = null;
-
 let metronomeBeat = 0;
 let metronomeTimer = null;
 
 let tapTimes = [];
 let tapResetTimer = null;
 
+let selectedTrackId = "piano";
+
 const DRUM_STEPS = 16;
 const MIN_BPM = 40;
 const MAX_BPM = 240;
+
+const trackColours = [
+    "#AFFF3E",
+    "#B4D44D",
+    "#A4E3A4",
+    "#FFFA70",
+    "#D9DF36",
+    "#337738",
+    "#4E8839",
+    "#B5AD7A"
+];
+
+let tracks = [
+    {
+        id: "piano",
+        name: "Piano",
+        instrument: "Piano",
+        volume: 1,
+        muted: false,
+        solo: false,
+        colour: trackColours[0]
+    },
+    {
+        id: "bass",
+        name: "Bass",
+        instrument: "Bass",
+        volume: 1,
+        muted: false,
+        solo: false,
+        colour: trackColours[1]
+    },
+    {
+        id: "drums",
+        name: "Drums",
+        instrument: "Drums",
+        volume: 1,
+        muted: false,
+        solo: false,
+        colour: trackColours[2]
+    }
+];
+
+const pianoContainer = document.querySelector(".piano");
+
+const volumeSlider = document.getElementById("volume");
+const volumeDisplay = document.getElementById("volumeDisplay");
+
+const waveformSelect = document.getElementById("waveform");
+
+const sustainSlider = document.getElementById("sustain");
+const sustainDisplay = document.getElementById("sustainDisplay");
+
+const octaveDisplay = document.getElementById("octaveDisplay");
+const octaveDown = document.getElementById("octaveDown");
+const octaveUp = document.getElementById("octaveUp");
+
+const chordModeSelect = document.getElementById("chordMode");
+
+const currentNote = document.getElementById("currentNote");
+const currentBassNote = document.getElementById("currentBassNote");
+
+const recordingStatus = document.getElementById("recordingStatus");
+const recordingDisplay = document.getElementById("recordingDisplay");
+const recordingNoteCount = document.getElementById("recordingNoteCount");
+const recordingDuration = document.getElementById("recordingDuration");
+
+const recordButton = document.getElementById("recordButton");
+const clearButton = document.getElementById("clearButton");
+const playButton = document.getElementById("playButton");
+
+const playRecordingButton = document.getElementById("playRecordingButton");
+const stopRecordingButton = document.getElementById("stopRecordingButton");
+
+const bpmInput = document.getElementById("bpm");
+const bpmDisplay = document.getElementById("bpmDisplay");
+const bpmDown = document.getElementById("bpmDown");
+const bpmUp = document.getElementById("bpmUp");
+
+const drumPlayButton = document.getElementById("drumPlayButton");
+const drumStopButton = document.getElementById("drumStopButton");
+const drumClearButton = document.getElementById("drumClearButton");
+
+const drumVolumeSlider = document.getElementById("drumVolume");
+const drumVolumeDisplay = document.getElementById("drumVolumeDisplay");
+
+const swingSlider = document.getElementById("swing");
+const swingDisplay = document.getElementById("swingDisplay");
+
+const metronomeButton = document.getElementById("metronomeButton");
+const tapTempoButton = document.getElementById("tapTempoButton");
+const tapTempoDisplay = document.getElementById("tapTempoDisplay");
+
+const masterVolumeSlider = document.getElementById("masterVolume");
+const masterVolumeDisplay = document.getElementById("masterVolumeDisplay");
+const masterMuteButton = document.getElementById("masterMuteButton");
+
+const saveButton = document.getElementById("saveButton");
+const loadButton = document.getElementById("loadButton");
+const deleteSaveButton = document.getElementById("deleteSaveButton");
+
+const saveStatus = document.getElementById("saveStatus");
+const projectNameInput = document.getElementById("projectName");
+
+const trackList = document.getElementById("trackList");
+const arrangementTracks = document.getElementById("arrangementTracks");
+const addTrackButton = document.getElementById("addTrackButton");
+
+const selectedTrackDisplay = document.getElementById("selectedTrackDisplay");
+const timelinePosition = document.getElementById("timelinePosition");
+
+const drumRows = document.querySelectorAll(".drum-row");
 
 const chromaticNotes = [
     "C",
@@ -68,55 +181,6 @@ const keyboardMap = {
     j: "B",
     k: "C"
 };
-
-const pianoContainer = document.querySelector(".piano");
-const volumeSlider = document.getElementById("volume");
-const volumeDisplay = document.getElementById("volumeDisplay");
-const waveformSelect = document.getElementById("waveform");
-const sustainSlider = document.getElementById("sustain");
-const sustainDisplay = document.getElementById("sustainDisplay");
-const octaveDisplay = document.getElementById("octaveDisplay");
-const octaveDown = document.getElementById("octaveDown");
-const octaveUp = document.getElementById("octaveUp");
-const chordModeSelect = document.getElementById("chordMode");
-const currentNote = document.getElementById("currentNote");
-const currentBassNote = document.getElementById("currentBassNote");
-
-const recordingStatus = document.getElementById("recordingStatus");
-const recordingDisplay = document.getElementById("recordingDisplay");
-const recordingNoteCount = document.getElementById("recordingNoteCount");
-const recordingDuration = document.getElementById("recordingDuration");
-
-const recordButton = document.getElementById("recordButton");
-const clearButton = document.getElementById("clearButton");
-const playButton = document.getElementById("playButton");
-const playRecordingButton = document.getElementById("playRecordingButton");
-const stopRecordingButton = document.getElementById("stopRecordingButton");
-
-const bpmInput = document.getElementById("bpm");
-const bpmDisplay = document.getElementById("bpmDisplay");
-const bpmDown = document.getElementById("bpmDown");
-const bpmUp = document.getElementById("bpmUp");
-
-const drumPlayButton = document.getElementById("drumPlayButton");
-const drumStopButton = document.getElementById("drumStopButton");
-const drumClearButton = document.getElementById("drumClearButton");
-const drumVolumeSlider = document.getElementById("drumVolume");
-const drumVolumeDisplay = document.getElementById("drumVolumeDisplay");
-
-const swingSlider = document.getElementById("swing");
-const swingDisplay = document.getElementById("swingDisplay");
-
-const metronomeButton = document.getElementById("metronomeButton");
-const tapTempoButton = document.getElementById("tapTempoButton");
-const tapTempoDisplay = document.getElementById("tapTempoDisplay");
-
-const saveButton = document.getElementById("saveButton");
-const loadButton = document.getElementById("loadButton");
-const deleteSaveButton = document.getElementById("deleteSaveButton");
-const saveStatus = document.getElementById("saveStatus");
-
-const drumRows = document.querySelectorAll(".drum-row");
 
 function ensureAudio() {
     if (audioContext.state === "suspended") {
@@ -187,6 +251,46 @@ function getChordNotes(rootNote, mode) {
     return intervals.map(interval => midiToNote(rootMidi + interval));
 }
 
+function getTrack(trackId) {
+    return tracks.find(track => track.id === trackId);
+}
+
+function hasSoloTrack() {
+    return tracks.some(track => track.solo);
+}
+
+function isTrackAudible(trackId) {
+    const track = getTrack(trackId);
+
+    if (!track) {
+        return true;
+    }
+
+    if (masterMuted || track.muted) {
+        return false;
+    }
+
+    if (hasSoloTrack() && !track.solo) {
+        return false;
+    }
+
+    return true;
+}
+
+function getTrackVolume(trackId) {
+    const track = getTrack(trackId);
+
+    if (!track || !isTrackAudible(trackId)) {
+        return 0;
+    }
+
+    return track.volume;
+}
+
+function getEffectiveMasterVolume() {
+    return masterMuted ? 0 : masterVolume;
+}
+
 function createOscillator(frequency, type, volume, duration = null) {
     ensureAudio();
 
@@ -194,6 +298,7 @@ function createOscillator(frequency, type, volume, duration = null) {
     const gainNode = audioContext.createGain();
 
     oscillator.type = type;
+
     oscillator.frequency.setValueAtTime(
         frequency,
         audioContext.currentTime
@@ -229,6 +334,10 @@ function createOscillator(frequency, type, volume, duration = null) {
 function playNote(note, type = waveform, volume = masterVolume) {
     ensureAudio();
 
+    if (!isTrackAudible("piano")) {
+        return;
+    }
+
     const frequency = getNoteFrequency(note);
 
     if (!frequency) {
@@ -238,6 +347,12 @@ function playNote(note, type = waveform, volume = masterVolume) {
     if (activeNotes.has(note)) {
         stopNote(note, 0.03);
     }
+
+    const trackVolume = getTrackVolume("piano");
+    const finalVolume = Math.max(
+        volume * trackVolume * getEffectiveMasterVolume(),
+        0.001
+    );
 
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -250,7 +365,7 @@ function playNote(note, type = waveform, volume = masterVolume) {
     );
 
     gainNode.gain.setValueAtTime(
-        Math.max(volume, 0.001),
+        finalVolume,
         audioContext.currentTime
     );
 
@@ -467,7 +582,7 @@ function playPianoKey(note, keyElement) {
                 : `${note} ${chordMode}`;
     }
 
-    recordNote(note);
+    recordNote(note, "piano");
 }
 
 function releasePianoKey(note, keyElement) {
@@ -478,6 +593,10 @@ function releasePianoKey(note, keyElement) {
     }
 
     setKeyPressed(keyElement, false);
+
+    if (currentNote) {
+        currentNote.textContent = "—";
+    }
 }
 
 function bindPianoEvents() {
@@ -518,8 +637,12 @@ function bindPianoEvents() {
     });
 }
 
-function recordNote(note) {
+function recordNote(note, instrument = "piano") {
     if (!isRecording) {
+        return;
+    }
+
+    if (!isTrackAudible(selectedTrackId)) {
         return;
     }
 
@@ -528,11 +651,14 @@ function recordNote(note) {
 
     recording.push({
         note,
+        instrument,
+        trackId: selectedTrackId,
         time: elapsed,
-        chord: chordMode
+        chord: instrument === "piano" ? chordMode : "off"
     });
 
     updateRecordingDisplay();
+    renderArrangement();
 }
 
 function updateRecordingDisplay() {
@@ -542,11 +668,16 @@ function updateRecordingDisplay() {
         } else {
             recordingDisplay.textContent = recording
                 .map(item => {
+                    const instrument =
+                        item.instrument === "bass"
+                            ? "Bass"
+                            : "Piano";
+
                     if (item.chord && item.chord !== "off") {
-                        return `${item.note} (${item.chord})`;
+                        return `${instrument}: ${item.note} (${item.chord})`;
                     }
 
-                    return item.note;
+                    return `${instrument}: ${item.note}`;
                 })
                 .join(" • ");
         }
@@ -594,10 +725,12 @@ function startRecording() {
     }
 
     if (recordingStatus) {
-        recordingStatus.textContent = "Recording";
+        recordingStatus.textContent =
+            `Recording ${getTrack(selectedTrackId)?.name || ""}`;
     }
 
     updateRecordingDisplay();
+    renderArrangement();
 
     clearInterval(recordingTimer);
 
@@ -631,6 +764,8 @@ function stopRecording() {
     }
 
     updateRecordingDisplay();
+    renderArrangement();
+    markUnsaved();
 }
 
 function toggleRecording() {
@@ -651,6 +786,8 @@ function clearRecording() {
     }
 
     updateRecordingDisplay();
+    renderArrangement();
+    markUnsaved();
 }
 
 function playRecording() {
@@ -710,23 +847,38 @@ function scheduleNextRecordingNote() {
 
         const note = noteData.note;
         const storedChord = noteData.chord || "off";
+        const instrument = noteData.instrument || "piano";
 
-        const notes = getChordNotes(
-            note,
-            storedChord
-        );
+        if (instrument === "bass") {
+            if (isTrackAudible(noteData.trackId || "bass")) {
+                playBassNote(note);
+                setTimeout(() => {
+                    stopBassNote(note);
+                }, Math.max(100, sustain * 500));
+            }
+        } else {
+            const notes = getChordNotes(
+                note,
+                storedChord
+            );
 
-        notes.forEach(chordNote => {
-            playNote(chordNote);
-        });
-
-        setTimeout(() => {
             notes.forEach(chordNote => {
-                stopNote(chordNote, 0.12);
+                playNote(chordNote);
             });
-        }, Math.max(100, sustain * 500));
+
+            setTimeout(() => {
+                notes.forEach(chordNote => {
+                    stopNote(chordNote, 0.12);
+                });
+            }, Math.max(100, sustain * 500));
+        }
 
         playbackIndex++;
+
+        if (timelinePosition) {
+            timelinePosition.textContent =
+                `${(noteData.time / 1000).toFixed(1)}s`;
+        }
 
         scheduleNextRecordingNote();
     }, delay);
@@ -740,6 +892,10 @@ function stopRecordingPlayback() {
 
     activeNotes.forEach((_, note) => {
         stopNote(note, 0.05);
+    });
+
+    activeBassNotes.forEach((_, note) => {
+        stopBassNote(note);
     });
 
     activeChords.clear();
@@ -771,6 +927,15 @@ function updateVolume() {
 
     if (volumeDisplay) {
         volumeDisplay.textContent =
+            `${Math.round(masterVolume * 100)}%`;
+    }
+
+    updateMasterVolumeDisplay();
+}
+
+function updateMasterVolumeDisplay() {
+    if (masterVolumeDisplay) {
+        masterVolumeDisplay.textContent =
             `${Math.round(masterVolume * 100)}%`;
     }
 }
@@ -883,6 +1048,10 @@ function getDrumStepDelay(step) {
 function playKick() {
     ensureAudio();
 
+    if (!isTrackAudible("drums")) {
+        return;
+    }
+
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
 
@@ -898,8 +1067,13 @@ function playKick() {
         audioContext.currentTime + 0.18
     );
 
+    const finalVolume =
+        drumVolume *
+        getTrackVolume("drums") *
+        getEffectiveMasterVolume();
+
     gain.gain.setValueAtTime(
-        Math.max(drumVolume, 0.001),
+        Math.max(finalVolume, 0.001),
         audioContext.currentTime
     );
 
@@ -920,6 +1094,10 @@ function playKick() {
 
 function playSnare() {
     ensureAudio();
+
+    if (!isTrackAudible("drums")) {
+        return;
+    }
 
     const noiseBuffer = audioContext.createBuffer(
         1,
@@ -942,8 +1120,14 @@ function playSnare() {
     noiseFilter.type = "highpass";
     noiseFilter.frequency.value = 1200;
 
+    const finalVolume =
+        drumVolume *
+        0.8 *
+        getTrackVolume("drums") *
+        getEffectiveMasterVolume();
+
     noiseGain.gain.setValueAtTime(
-        Math.max(drumVolume * 0.8, 0.001),
+        Math.max(finalVolume, 0.001),
         audioContext.currentTime
     );
 
@@ -961,6 +1145,10 @@ function playSnare() {
 
 function playHiHat() {
     ensureAudio();
+
+    if (!isTrackAudible("drums")) {
+        return;
+    }
 
     const noiseBuffer = audioContext.createBuffer(
         1,
@@ -983,8 +1171,14 @@ function playHiHat() {
     filter.type = "highpass";
     filter.frequency.value = 5000;
 
+    const finalVolume =
+        drumVolume *
+        0.5 *
+        getTrackVolume("drums") *
+        getEffectiveMasterVolume();
+
     gain.gain.setValueAtTime(
-        Math.max(drumVolume * 0.5, 0.001),
+        Math.max(finalVolume, 0.001),
         audioContext.currentTime
     );
 
@@ -1047,10 +1241,9 @@ function playDrumStep() {
         activeStep.classList.add("playing");
 
         if (activeStep.classList.contains("active")) {
-            const instrument =
-                activeStep.dataset.instrument;
-
-            playDrumSound(instrument);
+            playDrumSound(
+                activeStep.dataset.instrument
+            );
         }
     });
 
@@ -1177,37 +1370,30 @@ function setDrumPattern(pattern) {
     });
 }
 
-function applyDrumPreset(name) {
-    if (name === "basic") {
-        setDrumPattern({
-            kick: [1, 5, 9, 13],
-            snare: [5, 13],
-            hihat: [1, 3, 5, 7, 9, 11, 13, 15]
-        });
-    }
+function getDrumPattern() {
+    const pattern = {
+        kick: [],
+        snare: [],
+        hihat: []
+    };
 
-    if (name === "house") {
-        setDrumPattern({
-            kick: [1, 5, 9, 13],
-            snare: [5, 13],
-            hihat: [
-                1, 2, 3, 4,
-                5, 6, 7, 8,
-                9, 10, 11, 12,
-                13, 14, 15, 16
-            ]
-        });
-    }
+    drumRows.forEach(row => {
+        const type = getDrumInstrument(row);
 
-    if (name === "break") {
-        setDrumPattern({
-            kick: [1, 7, 9, 12],
-            snare: [5, 13, 15],
-            hihat: [1, 3, 5, 7, 9, 11, 13, 15]
-        });
-    }
+        if (!type || !pattern[type]) {
+            return;
+        }
 
-    markUnsaved();
+        row.querySelectorAll(".step").forEach(
+            (step, index) => {
+                if (step.classList.contains("active")) {
+                    pattern[type].push(index + 1);
+                }
+            }
+        );
+    });
+
+    return pattern;
 }
 
 function updateBeatIndicators() {
@@ -1225,6 +1411,10 @@ function updateBeatIndicators() {
 function playMetronomeClick() {
     ensureAudio();
 
+    if (masterMuted) {
+        return;
+    }
+
     const oscillator =
         audioContext.createOscillator();
 
@@ -1241,7 +1431,7 @@ function playMetronomeClick() {
     );
 
     gainNode.gain.setValueAtTime(
-        accent ? 0.2 : 0.1,
+        (accent ? 0.2 : 0.1) * getEffectiveMasterVolume(),
         audioContext.currentTime
     );
 
@@ -1301,7 +1491,7 @@ function stopMetronome() {
 
     if (metronomeButton) {
         metronomeButton.textContent =
-            "Metronome";
+            "Metronome: Off";
 
         metronomeButton.classList.remove("active");
     }
@@ -1327,6 +1517,10 @@ function tapTempo() {
 
     tapResetTimer = setTimeout(() => {
         tapTimes = [];
+
+        if (tapTempoDisplay) {
+            tapTempoDisplay.textContent = "0 taps";
+        }
     }, 2000);
 
     if (tapTimes.length >= 2) {
@@ -1355,280 +1549,12 @@ function tapTempo() {
     }
 }
 
-function getDrumPattern() {
-    const pattern = {
-        kick: [],
-        snare: [],
-        hihat: []
-    };
-
-    drumRows.forEach(row => {
-        const type = getDrumInstrument(row);
-
-        if (!type || !pattern[type]) {
-            return;
-        }
-
-        row.querySelectorAll(".step").forEach(
-            (step, index) => {
-                if (step.classList.contains("active")) {
-                    pattern[type].push(index + 1);
-                }
-            }
-        );
-    });
-
-    return pattern;
-}
-
-function getSaveData() {
-    return {
-        version: "1.8",
-        bpm,
-        octave,
-        masterVolume,
-        drumVolume,
-        waveform,
-        sustain,
-        swing,
-        chordMode,
-        recording,
-        drumPattern: getDrumPattern()
-    };
-}
-
-function markUnsaved() {
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Unsaved changes";
-    }
-}
-
-function saveProject() {
-    const data = getSaveData();
-
-    localStorage.setItem(
-        "grooveProject",
-        JSON.stringify(data)
-    );
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Project saved";
-    }
-}
-
-function loadProject() {
-    const saved =
-        localStorage.getItem("grooveProject");
-
-    if (!saved) {
-        if (saveStatus) {
-            saveStatus.textContent =
-                "No saved project";
-        }
-
-        return;
-    }
-
-    try {
-        const data = JSON.parse(saved);
-
-        if (data.bpm !== undefined) {
-            updateBpm(data.bpm);
-        }
-
-        if (data.octave !== undefined) {
-            octave = Math.max(
-                2,
-                Math.min(5, Number(data.octave))
-            );
-
-            renderPiano();
-        }
-
-        if (data.masterVolume !== undefined) {
-            masterVolume =
-                Number(data.masterVolume);
-
-            if (volumeSlider) {
-                volumeSlider.value =
-                    masterVolume;
-            }
-
-            updateVolume();
-        }
-
-        if (data.drumVolume !== undefined) {
-            drumVolume =
-                Number(data.drumVolume);
-
-            if (drumVolumeSlider) {
-                drumVolumeSlider.value =
-                    drumVolume;
-            }
-
-            updateDrumVolume();
-        }
-
-        if (data.waveform !== undefined) {
-            waveform = data.waveform;
-
-            if (waveformSelect) {
-                waveformSelect.value =
-                    waveform;
-            }
-        }
-
-        if (data.sustain !== undefined) {
-            sustain =
-                Number(data.sustain);
-
-            if (sustainSlider) {
-                sustainSlider.value =
-                    sustain;
-            }
-
-            updateSustain();
-        }
-
-        if (data.swing !== undefined) {
-            swing =
-                Number(data.swing);
-
-            if (swingSlider) {
-                swingSlider.value =
-                    swing * 100;
-            }
-
-            updateSwing();
-        }
-
-        if (data.chordMode !== undefined) {
-            chordMode =
-                data.chordMode;
-
-            if (chordModeSelect) {
-                chordModeSelect.value =
-                    chordMode;
-            }
-        }
-
-        recording =
-            Array.isArray(data.recording)
-                ? data.recording
-                : [];
-
-        if (data.drumPattern) {
-            setDrumPattern(
-                data.drumPattern
-            );
-        }
-
-        updateRecordingDisplay();
-
-        if (saveStatus) {
-            saveStatus.textContent =
-                "Project loaded";
-        }
-    } catch (error) {
-        if (saveStatus) {
-            saveStatus.textContent =
-                "Could not load project";
-        }
-    }
-}
-
-function deleteSavedProject() {
-    localStorage.removeItem(
-        "grooveProject"
-    );
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Saved project deleted";
-    }
-}
-
-function handleKeyboardDown(event) {
-    if (
-        event.target.tagName === "INPUT" ||
-        event.target.tagName === "SELECT" ||
-        event.target.tagName === "TEXTAREA"
-    ) {
-        return;
-    }
-
-    const key =
-        event.key.toLowerCase();
-
-    if (event.repeat) {
-        return;
-    }
-
-    if (key === "z") {
-        changeOctave(-1);
-        return;
-    }
-
-    if (key === "x") {
-        changeOctave(1);
-        return;
-    }
-
-    const note =
-        getRootNoteFromKeyboardKey(key);
-
-    if (!note) {
-        return;
-    }
-
-    const pianoKey =
-        findPianoKey(note);
-
-    if (!pianoKey) {
-        return;
-    }
-
-    event.preventDefault();
-
-    playPianoKey(
-        note,
-        pianoKey
-    );
-
-    pianoKey.dataset.keyboardPressed =
-        "true";
-}
-
-function handleKeyboardUp(event) {
-    const key =
-        event.key.toLowerCase();
-
-    const note =
-        getRootNoteFromKeyboardKey(key);
-
-    if (!note) {
-        return;
-    }
-
-    const pianoKey =
-        findPianoKey(note);
-
-    if (!pianoKey) {
-        return;
-    }
-
-    releasePianoKey(
-        note,
-        pianoKey
-    );
-
-    delete pianoKey.dataset.keyboardPressed;
-}
-
-function playBassNote(note, keyElement) {
+function playBassNote(note, keyElement = null) {
     ensureAudio();
+
+    if (!isTrackAudible("bass")) {
+        return;
+    }
 
     const frequency =
         getNoteFrequency(note);
@@ -1657,11 +1583,14 @@ function playBassNote(note, keyElement) {
         audioContext.currentTime
     );
 
+    const finalVolume =
+        masterVolume *
+        0.45 *
+        getTrackVolume("bass") *
+        getEffectiveMasterVolume();
+
     gainNode.gain.setValueAtTime(
-        Math.max(
-            masterVolume * 0.45,
-            0.001
-        ),
+        Math.max(finalVolume, 0.001),
         audioContext.currentTime
     );
 
@@ -1676,18 +1605,19 @@ function playBassNote(note, keyElement) {
     });
 
     if (keyElement) {
-        keyElement.classList.add(
-            "pressed"
-        );
+        keyElement.classList.add("pressed");
     }
 
     if (currentBassNote) {
-        currentBassNote.textContent =
-            note;
+        currentBassNote.textContent = note;
+    }
+
+    if (isRecording && keyElement) {
+        recordNote(note, "bass");
     }
 }
 
-function stopBassNote(note, keyElement) {
+function stopBassNote(note, keyElement = null) {
     const active =
         activeBassNotes.get(note);
 
@@ -1695,9 +1625,7 @@ function stopBassNote(note, keyElement) {
         const now =
             audioContext.currentTime;
 
-        active.gainNode.gain.cancelScheduledValues(
-            now
-        );
+        active.gainNode.gain.cancelScheduledValues(now);
 
         active.gainNode.gain.setValueAtTime(
             Math.max(
@@ -1723,26 +1651,20 @@ function stopBassNote(note, keyElement) {
     }
 
     if (keyElement) {
-        keyElement.classList.remove(
-            "pressed"
-        );
+        keyElement.classList.remove("pressed");
     }
 
     if (currentBassNote) {
-        currentBassNote.textContent =
-            "—";
+        currentBassNote.textContent = "—";
     }
 }
 
 function bindBassEvents() {
     const bassKeys =
-        document.querySelectorAll(
-            ".bass-key"
-        );
+        document.querySelectorAll(".bass-key");
 
     bassKeys.forEach(key => {
-        const note =
-            key.dataset.note;
+        const note = key.dataset.note;
 
         if (!note) {
             return;
@@ -1798,6 +1720,909 @@ function bindBassEvents() {
     });
 }
 
+function createTrack() {
+    const number =
+        tracks.length + 1;
+
+    const id =
+        `track-${Date.now()}`;
+
+    tracks.push({
+        id,
+        name: `Track ${number}`,
+        instrument: "Piano",
+        volume: 1,
+        muted: false,
+        solo: false,
+        colour:
+            trackColours[
+                tracks.length % trackColours.length
+            ]
+    });
+
+    selectedTrackId = id;
+
+    renderTracks();
+    renderArrangement();
+    markUnsaved();
+}
+
+function renameTrack(trackId) {
+    const track = getTrack(trackId);
+
+    if (!track) {
+        return;
+    }
+
+    const newName =
+        prompt("Track name:", track.name);
+
+    if (!newName) {
+        return;
+    }
+
+    track.name =
+        newName.trim().slice(0, 30) ||
+        track.name;
+
+    renderTracks();
+    renderArrangement();
+    markUnsaved();
+}
+
+function deleteTrack(trackId) {
+    if (
+        trackId === "piano" ||
+        trackId === "bass" ||
+        trackId === "drums"
+    ) {
+        if (tracks.length <= 3) {
+            alert("The main Groove tracks cannot all be removed.");
+            return;
+        }
+    }
+
+    const index =
+        tracks.findIndex(
+            track => track.id === trackId
+        );
+
+    if (index === -1) {
+        return;
+    }
+
+    const track =
+        tracks[index];
+
+    if (
+        !confirm(
+            `Delete "${track.name}"?`
+        )
+    ) {
+        return;
+    }
+
+    tracks.splice(index, 1);
+
+    recording =
+        recording.filter(
+            item => item.trackId !== trackId
+        );
+
+    if (selectedTrackId === trackId) {
+        selectedTrackId =
+            tracks[0]?.id || null;
+    }
+
+    renderTracks();
+    renderArrangement();
+    updateRecordingDisplay();
+    markUnsaved();
+}
+
+function selectTrack(trackId) {
+    if (!getTrack(trackId)) {
+        return;
+    }
+
+    selectedTrackId = trackId;
+
+    const track =
+        getTrack(trackId);
+
+    if (selectedTrackDisplay) {
+        selectedTrackDisplay.textContent =
+            `${track.name} selected`;
+    }
+
+    renderTracks();
+    renderArrangement();
+}
+
+function toggleTrackMute(trackId) {
+    const track =
+        getTrack(trackId);
+
+    if (!track) {
+        return;
+    }
+
+    track.muted =
+        !track.muted;
+
+    renderTracks();
+    markUnsaved();
+}
+
+function toggleTrackSolo(trackId) {
+    const track =
+        getTrack(trackId);
+
+    if (!track) {
+        return;
+    }
+
+    track.solo =
+        !track.solo;
+
+    renderTracks();
+    markUnsaved();
+}
+
+function updateTrackVolume(trackId, value) {
+    const track =
+        getTrack(trackId);
+
+    if (!track) {
+        return;
+    }
+
+    track.volume =
+        Number(value);
+
+    markUnsaved();
+}
+
+function cycleTrackColour(trackId) {
+    const track =
+        getTrack(trackId);
+
+    if (!track) {
+        return;
+    }
+
+    const currentIndex =
+        trackColours.indexOf(track.colour);
+
+    const nextIndex =
+        currentIndex === -1
+            ? 0
+            : (currentIndex + 1) % trackColours.length;
+
+    track.colour =
+        trackColours[nextIndex];
+
+    renderTracks();
+    renderArrangement();
+    markUnsaved();
+}
+
+function renderTracks() {
+    if (!trackList) {
+        return;
+    }
+
+    trackList.innerHTML = "";
+
+    tracks.forEach((track, index) => {
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "track-item";
+
+        if (track.id === selectedTrackId) {
+            item.classList.add("selected");
+        }
+
+        if (track.muted) {
+            item.classList.add("muted");
+        }
+
+        if (track.solo) {
+            item.classList.add("solo");
+        }
+
+        item.addEventListener(
+            "click",
+            () => selectTrack(track.id)
+        );
+
+        const top =
+            document.createElement("div");
+
+        top.className =
+            "track-top";
+
+        const number =
+            document.createElement("span");
+
+        number.className =
+            "track-number";
+
+        number.textContent =
+            String(index + 1).padStart(2, "0");
+
+        const colour =
+            document.createElement("span");
+
+        colour.className =
+            "track-colour";
+
+        colour.style.background =
+            track.colour;
+
+        colour.title =
+            "Change track colour";
+
+        colour.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                cycleTrackColour(
+                    track.id
+                );
+            }
+        );
+
+        const name =
+            document.createElement("div");
+
+        name.className =
+            "track-name";
+
+        name.innerHTML = `
+            <strong>${escapeHtml(track.name)}</strong>
+            <span>${escapeHtml(track.instrument)}</span>
+        `;
+
+        name.addEventListener(
+            "dblclick",
+            event => {
+                event.stopPropagation();
+
+                renameTrack(
+                    track.id
+                );
+            }
+        );
+
+        top.appendChild(number);
+        top.appendChild(colour);
+        top.appendChild(name);
+
+        const volume =
+            document.createElement("input");
+
+        volume.type = "range";
+        volume.className = "track-volume";
+        volume.min = "0";
+        volume.max = "1";
+        volume.step = "0.01";
+        volume.value = track.volume;
+
+        volume.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+            }
+        );
+
+        volume.addEventListener(
+            "input",
+            event => {
+                updateTrackVolume(
+                    track.id,
+                    event.target.value
+                );
+            }
+        );
+
+        const actions =
+            document.createElement("div");
+
+        actions.className =
+            "track-actions";
+
+        const rename =
+            document.createElement("button");
+
+        rename.textContent =
+            "Rename";
+
+        rename.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                renameTrack(
+                    track.id
+                );
+            }
+        );
+
+        const mute =
+            document.createElement("button");
+
+        mute.textContent =
+            track.muted
+                ? "Unmute"
+                : "Mute";
+
+        mute.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                toggleTrackMute(
+                    track.id
+                );
+            }
+        );
+
+        const solo =
+            document.createElement("button");
+
+        solo.textContent =
+            track.solo
+                ? "Unsolo"
+                : "Solo";
+
+        solo.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                toggleTrackSolo(
+                    track.id
+                );
+            }
+        );
+
+        const deleteButton =
+            document.createElement("button");
+
+        deleteButton.textContent =
+            "Delete";
+
+        deleteButton.className =
+            "delete-track";
+
+        deleteButton.addEventListener(
+            "click",
+            event => {
+                event.stopPropagation();
+
+                deleteTrack(
+                    track.id
+                );
+            }
+        );
+
+        actions.appendChild(rename);
+        actions.appendChild(mute);
+        actions.appendChild(solo);
+        actions.appendChild(deleteButton);
+
+        item.appendChild(top);
+        item.appendChild(volume);
+        item.appendChild(actions);
+
+        trackList.appendChild(item);
+    });
+
+    const selected =
+        getTrack(selectedTrackId);
+
+    if (selected && selectedTrackDisplay) {
+        selectedTrackDisplay.textContent =
+            `${selected.name} selected`;
+    }
+}
+
+function renderArrangement() {
+    if (!arrangementTracks) {
+        return;
+    }
+
+    arrangementTracks.innerHTML = "";
+
+    tracks.forEach(track => {
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "arrangement-row";
+
+        const name =
+            document.createElement("div");
+
+        name.className =
+            "arrangement-track-name";
+
+        name.innerHTML = `
+            <span
+                class="track-colour"
+                style="background:${track.colour}"
+            ></span>
+            <span>${escapeHtml(track.name)}</span>
+        `;
+
+        const lane =
+            document.createElement("div");
+
+        lane.className =
+            "arrangement-lane";
+
+        if (track.id === selectedTrackId) {
+            lane.classList.add("selected");
+        }
+
+        lane.addEventListener(
+            "click",
+            () => selectTrack(track.id)
+        );
+
+        const trackRecording =
+            recording.filter(
+                item =>
+                    (item.trackId || "piano") === track.id
+            );
+
+        if (trackRecording.length > 0) {
+            const lastNote =
+                trackRecording[
+                    trackRecording.length - 1
+                ];
+
+            const firstNote =
+                trackRecording[0];
+
+            const duration =
+                Math.max(
+                    1000,
+                    lastNote.time - firstNote.time + 1000
+                );
+
+            const totalTimeline =
+                Math.max(
+                    duration,
+                    16000
+                );
+
+            const left =
+                (firstNote.time / totalTimeline) * 100;
+
+            const width =
+                Math.max(
+                    4,
+                    (duration / totalTimeline) * 100
+                );
+
+            const clip =
+                document.createElement("div");
+
+            clip.className =
+                "clip recording-clip";
+
+            clip.style.left =
+                `${Math.min(left, 95)}%`;
+
+            clip.style.width =
+                `${Math.min(width, 100 - left)}%`;
+
+            clip.style.background =
+                track.colour;
+
+            clip.textContent =
+                `${track.name} Recording`;
+
+            lane.appendChild(clip);
+        }
+
+        if (track.id === "drums") {
+            const pattern =
+                getDrumPattern();
+
+            const activeCount =
+                pattern.kick.length +
+                pattern.snare.length +
+                pattern.hihat.length;
+
+            if (activeCount > 0) {
+                const clip =
+                    document.createElement("div");
+
+                clip.className =
+                    "clip";
+
+                clip.style.left =
+                    "0%";
+
+                clip.style.width =
+                    "100%";
+
+                clip.style.background =
+                    track.colour;
+
+                clip.textContent =
+                    `${activeCount} drum steps`;
+
+                lane.appendChild(clip);
+            }
+        }
+
+        row.appendChild(name);
+        row.appendChild(lane);
+
+        arrangementTracks.appendChild(row);
+    });
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function getSaveData() {
+    return {
+        version: "1.8",
+        projectName:
+            projectNameInput?.value ||
+            "Untitled Groove",
+        bpm,
+        octave,
+        masterVolume,
+        masterMuted,
+        drumVolume,
+        waveform,
+        sustain,
+        swing,
+        chordMode,
+        recording,
+        drumPattern: getDrumPattern(),
+        tracks,
+        selectedTrackId
+    };
+}
+
+function markUnsaved() {
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Unsaved changes";
+    }
+}
+
+function saveProject() {
+    const data =
+        getSaveData();
+
+    localStorage.setItem(
+        "grooveProject",
+        JSON.stringify(data)
+    );
+
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Project saved";
+    }
+}
+
+function loadProject() {
+    const saved =
+        localStorage.getItem(
+            "grooveProject"
+        );
+
+    if (!saved) {
+        if (saveStatus) {
+            saveStatus.textContent =
+                "No saved project";
+        }
+
+        return;
+    }
+
+    try {
+        const data =
+            JSON.parse(saved);
+
+        if (data.projectName && projectNameInput) {
+            projectNameInput.value =
+                data.projectName;
+        }
+
+        if (data.bpm !== undefined) {
+            updateBpm(data.bpm);
+        }
+
+        if (data.octave !== undefined) {
+            octave = Math.max(
+                2,
+                Math.min(
+                    5,
+                    Number(data.octave)
+                )
+            );
+
+            renderPiano();
+        }
+
+        if (data.masterVolume !== undefined) {
+            masterVolume =
+                Number(data.masterVolume);
+
+            if (masterVolumeSlider) {
+                masterVolumeSlider.value =
+                    masterVolume;
+            }
+
+            if (volumeSlider) {
+                volumeSlider.value =
+                    masterVolume;
+            }
+
+            updateVolume();
+        }
+
+        if (data.masterMuted !== undefined) {
+            masterMuted =
+                Boolean(data.masterMuted);
+
+            updateMasterMuteButton();
+        }
+
+        if (data.drumVolume !== undefined) {
+            drumVolume =
+                Number(data.drumVolume);
+
+            if (drumVolumeSlider) {
+                drumVolumeSlider.value =
+                    drumVolume;
+            }
+
+            updateDrumVolume();
+        }
+
+        if (data.waveform !== undefined) {
+            waveform =
+                data.waveform;
+
+            if (waveformSelect) {
+                waveformSelect.value =
+                    waveform;
+            }
+        }
+
+        if (data.sustain !== undefined) {
+            sustain =
+                Number(data.sustain);
+
+            if (sustainSlider) {
+                sustainSlider.value =
+                    sustain;
+            }
+
+            updateSustain();
+        }
+
+        if (data.swing !== undefined) {
+            swing =
+                Number(data.swing);
+
+            if (swingSlider) {
+                swingSlider.value =
+                    swing * 100;
+            }
+
+            updateSwing();
+        }
+
+        if (data.chordMode !== undefined) {
+            chordMode =
+                data.chordMode;
+
+            if (chordModeSelect) {
+                chordModeSelect.value =
+                    chordMode;
+            }
+        }
+
+        recording =
+            Array.isArray(data.recording)
+                ? data.recording
+                : [];
+
+        if (
+            Array.isArray(data.tracks) &&
+            data.tracks.length > 0
+        ) {
+            tracks =
+                data.tracks;
+        }
+
+        if (
+            data.selectedTrackId &&
+            getTrack(data.selectedTrackId)
+        ) {
+            selectedTrackId =
+                data.selectedTrackId;
+        }
+
+        if (data.drumPattern) {
+            setDrumPattern(
+                data.drumPattern
+            );
+        }
+
+        renderTracks();
+        renderArrangement();
+        updateRecordingDisplay();
+
+        if (saveStatus) {
+            saveStatus.textContent =
+                "Project loaded";
+        }
+    } catch (error) {
+        console.error(error);
+
+        if (saveStatus) {
+            saveStatus.textContent =
+                "Could not load project";
+        }
+    }
+}
+
+function deleteSavedProject() {
+    localStorage.removeItem(
+        "grooveProject"
+    );
+
+    if (saveStatus) {
+        saveStatus.textContent =
+            "Saved project deleted";
+    }
+}
+
+function updateMasterMuteButton() {
+    if (!masterMuteButton) {
+        return;
+    }
+
+    masterMuteButton.textContent =
+        masterMuted
+            ? "Master Muted"
+            : "Master Mute";
+
+    masterMuteButton.classList.toggle(
+        "active",
+        masterMuted
+    );
+}
+
+function toggleMasterMute() {
+    masterMuted =
+        !masterMuted;
+
+    updateMasterMuteButton();
+    markUnsaved();
+}
+
+function handleKeyboardDown(event) {
+    const key = event.key.toLowerCase();
+
+    if (event.repeat) {
+        return;
+    }
+
+    const activeElement = document.activeElement;
+
+    if (
+        activeElement &&
+        (
+            activeElement.tagName === "INPUT" ||
+            activeElement.tagName === "TEXTAREA"
+        )
+    ) {
+        return;
+    }
+
+    if (key === " ") {
+        event.preventDefault();
+
+        if (isPlaying) {
+            stopRecordingPlayback();
+        } else {
+            playRecording();
+        }
+
+        return;
+    }
+
+    if (key === "r") {
+        toggleRecording();
+        return;
+    }
+
+    if (key === "m") {
+        if (isMetronomeOn) {
+            stopMetronome();
+        } else {
+            startMetronome();
+        }
+        return;
+    }
+
+    if (key === "z") {
+        changeOctave(-1);
+        return;
+    }
+
+    if (key === "x") {
+        changeOctave(1);
+        return;
+    }
+
+    const note = getRootNoteFromKeyboardKey(key);
+
+    if (!note) {
+        return;
+    }
+
+    const pianoKey = findPianoKey(note);
+
+    if (!pianoKey) {
+        return;
+    }
+
+    event.preventDefault();
+
+    playPianoKey(note, pianoKey);
+
+    pianoKey.dataset.keyboardPressed = "true";
+}
+
+function handleKeyboardUp(event) {
+    const key =
+        event.key.toLowerCase();
+
+    const note =
+        getRootNoteFromKeyboardKey(key);
+
+    if (!note) {
+        return;
+    }
+
+    const pianoKey =
+        findPianoKey(note);
+
+    if (!pianoKey) {
+        return;
+    }
+
+    releasePianoKey(
+        note,
+        pianoKey
+    );
+
+    delete pianoKey.dataset.keyboardPressed;
+}
+
 document.addEventListener(
     "keydown",
     handleKeyboardDown
@@ -1812,9 +2637,45 @@ if (volumeSlider) {
     volumeSlider.addEventListener(
         "input",
         () => {
+            masterVolume =
+                Number(volumeSlider.value);
+
+            updateVolume();
+
+            if (masterVolumeSlider) {
+                masterVolumeSlider.value =
+                    masterVolume;
+            }
+
+            markUnsaved();
+        }
+    );
+}
+
+if (masterVolumeSlider) {
+    masterVolumeSlider.addEventListener(
+        "input",
+        () => {
+            masterVolume =
+                Number(masterVolumeSlider.value);
+
+            updateMasterVolumeDisplay();
+
+            if (volumeSlider) {
+                volumeSlider.value =
+                    masterVolume;
+            }
+
             updateVolume();
             markUnsaved();
         }
+    );
+}
+
+if (masterMuteButton) {
+    masterMuteButton.addEventListener(
+        "click",
+        toggleMasterMute
     );
 }
 
@@ -1932,7 +2793,10 @@ if (bpmDown) {
     bpmDown.addEventListener(
         "click",
         () => {
-            updateBpm(bpm - 5);
+            updateBpm(
+                bpm - 5
+            );
+
             markUnsaved();
         }
     );
@@ -1942,7 +2806,10 @@ if (bpmUp) {
     bpmUp.addEventListener(
         "click",
         () => {
-            updateBpm(bpm + 5);
+            updateBpm(
+                bpm + 5
+            );
+
             markUnsaved();
         }
     );
@@ -1967,6 +2834,7 @@ if (drumClearButton) {
         "click",
         () => {
             clearDrums();
+            renderArrangement();
             markUnsaved();
         }
     );
@@ -2004,21 +2872,9 @@ drumRows.forEach(row => {
                         step.dataset.instrument
                     );
 
+                    renderArrangement();
                     markUnsaved();
                 }
-            );
-        }
-    );
-});
-
-document.querySelectorAll(
-    "[data-preset]"
-).forEach(button => {
-    button.addEventListener(
-        "click",
-        () => {
-            applyDrumPreset(
-                button.dataset.preset
             );
         }
     );
@@ -2065,8 +2921,21 @@ if (deleteSaveButton) {
     );
 }
 
-renderPiano();
+if (addTrackButton) {
+    addTrackButton.addEventListener(
+        "click",
+        createTrack
+    );
+}
 
+if (projectNameInput) {
+    projectNameInput.addEventListener(
+        "input",
+        markUnsaved
+    );
+}
+
+renderPiano();
 bindBassEvents();
 
 updateVolume();
@@ -2075,6 +2944,10 @@ updateDrumVolume();
 updateSwing();
 updateBpm(bpm);
 updateRecordingDisplay();
+updateMasterMuteButton();
+
+renderTracks();
+renderArrangement();
 
 window.addEventListener(
     "beforeunload",
@@ -2094,10 +2967,26 @@ window.addEventListener(
 
         activeBassNotes.forEach(
             (_, note) => {
-                stopBassNote(
-                    note
-                );
+                stopBassNote(note);
             }
         );
     }
 );
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
