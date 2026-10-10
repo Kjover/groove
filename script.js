@@ -25,6 +25,7 @@ let playbackStartTime = 0;
 let activeNotes = new Map();
 let activeChords = new Map();
 let activeBassNotes = new Map();
+let activeInstrumentVoices = new Map();
 
 let drumStep = 0;
 let drumTimer = null;
@@ -82,104 +83,130 @@ let tracks = [
 ];
 
 const pianoContainer = document.querySelector(".piano");
-
 const volumeSlider = document.getElementById("volume");
 const volumeDisplay = document.getElementById("volumeDisplay");
-
 const waveformSelect = document.getElementById("waveform");
-
 const sustainSlider = document.getElementById("sustain");
 const sustainDisplay = document.getElementById("sustainDisplay");
-
 const octaveDisplay = document.getElementById("octaveDisplay");
 const octaveDown = document.getElementById("octaveDown");
 const octaveUp = document.getElementById("octaveUp");
-
 const chordModeSelect = document.getElementById("chordMode");
-
 const currentNote = document.getElementById("currentNote");
 const currentBassNote = document.getElementById("currentBassNote");
-
 const recordingStatus = document.getElementById("recordingStatus");
 const recordingDisplay = document.getElementById("recordingDisplay");
 const recordingNoteCount = document.getElementById("recordingNoteCount");
 const recordingDuration = document.getElementById("recordingDuration");
-
 const recordButton = document.getElementById("recordButton");
 const clearButton = document.getElementById("clearButton");
 const playButton = document.getElementById("playButton");
-
 const playRecordingButton = document.getElementById("playRecordingButton");
 const stopRecordingButton = document.getElementById("stopRecordingButton");
-
 const bpmInput = document.getElementById("bpm");
 const bpmDisplay = document.getElementById("bpmDisplay");
 const bpmDown = document.getElementById("bpmDown");
 const bpmUp = document.getElementById("bpmUp");
-
 const drumPlayButton = document.getElementById("drumPlayButton");
 const drumStopButton = document.getElementById("drumStopButton");
 const drumClearButton = document.getElementById("drumClearButton");
-
 const drumVolumeSlider = document.getElementById("drumVolume");
 const drumVolumeDisplay = document.getElementById("drumVolumeDisplay");
-
 const swingSlider = document.getElementById("swing");
 const swingDisplay = document.getElementById("swingDisplay");
-
 const metronomeButton = document.getElementById("metronomeButton");
 const tapTempoButton = document.getElementById("tapTempoButton");
 const tapTempoDisplay = document.getElementById("tapTempoDisplay");
-
 const masterVolumeSlider = document.getElementById("masterVolume");
 const masterVolumeDisplay = document.getElementById("masterVolumeDisplay");
 const masterMuteButton = document.getElementById("masterMuteButton");
-
 const saveButton = document.getElementById("saveButton");
 const loadButton = document.getElementById("loadButton");
 const deleteSaveButton = document.getElementById("deleteSaveButton");
-
 const saveStatus = document.getElementById("saveStatus");
 const projectNameInput = document.getElementById("projectName");
-
 const trackList = document.getElementById("trackList");
 const arrangementTracks = document.getElementById("arrangementTracks");
 const addTrackButton = document.getElementById("addTrackButton");
-
 const selectedTrackDisplay = document.getElementById("selectedTrackDisplay");
 const timelinePosition = document.getElementById("timelinePosition");
-
 const drumRows = document.querySelectorAll(".drum-row");
 
+const instrumentSelect = document.getElementById("instrumentSelect");
+const synthControls = document.getElementById("synthControls");
+const synthWaveform = document.getElementById("synthWaveform");
+const synthAttack = document.getElementById("synthAttack");
+const synthRelease = document.getElementById("synthRelease");
+const synthFilter = document.getElementById("synthFilter");
+const synthResonance = document.getElementById("synthResonance");
+const synthVolume = document.getElementById("synthVolume");
+
 const chromaticNotes = [
-    "C",
-    "C#",
-    "D",
-    "D#",
-    "E",
-    "F",
-    "F#",
-    "G",
-    "G#",
-    "A",
-    "A#",
-    "B"
+    "C", "C#", "D", "D#", "E", "F",
+    "F#", "G", "G#", "A", "A#", "B"
 ];
 
 const keyboardMap = {
-    a: "C",
-    w: "C#",
-    s: "D",
-    e: "D#",
-    d: "E",
-    f: "F",
-    t: "F#",
-    g: "G",
-    y: "G#",
-    h: "A",
-    u: "A#",
-    j: "B",
-    k: "C"
+    a: "C", w: "C#", s: "D", e: "D#",
+    d: "E", f: "F", t: "F#", g: "G",
+    y: "G#", h: "A", u: "A#", j: "B", k: "C"
+};
+
+const instrumentSettings = {
+    "Piano": {
+        attack: 0.008, release: 0.18, filter: 9000,
+        resonance: 0.7, volume: 0.8,
+        layers: [
+            { type: "triangle", ratio: 1, gain: 0.8 },
+            { type: "sine", ratio: 2, gain: 0.12 }
+        ]
+    },
+    "Bass": {
+        attack: 0.015, release: 0.15, filter: 1800,
+        resonance: 1, volume: 0.55,
+        layers: [
+            { type: "sawtooth", ratio: 1, gain: 0.8 },
+            { type: "sine", ratio: 0.5, gain: 0.25 }
+        ]
+    },
+    "Synth": {
+        attack: 0.05, release: 0.3, filter: 6000,
+        resonance: 1, volume: 0.7,
+        layers: [
+            { type: "sawtooth", ratio: 1, gain: 0.8 },
+            { type: "sine", ratio: 2, gain: 0.15 }
+        ]
+    },
+    "Organ": {
+        attack: 0.01, release: 0.12, filter: 10000,
+        resonance: 0.5, volume: 0.65,
+        layers: [
+            { type: "sine", ratio: 1, gain: 0.5 },
+            { type: "sine", ratio: 2, gain: 0.3 },
+            { type: "sine", ratio: 3, gain: 0.18 },
+            { type: "sine", ratio: 4, gain: 0.1 },
+            { type: "sine", ratio: 6, gain: 0.06 },
+            { type: "triangle", ratio: 1, gain: 0.12 }
+        ]
+    },
+    "Strings": {
+        attack: 0.35, release: 0.8, filter: 4500,
+        resonance: 0.8, volume: 0.55,
+        layers: [
+            { type: "sawtooth", ratio: 0.997, gain: 0.35 },
+            { type: "sawtooth", ratio: 1.003, gain: 0.35 },
+            { type: "triangle", ratio: 1, gain: 0.3 }
+        ]
+    },
+    "Electric Piano": {
+        attack: 0.005, release: 0.35, filter: 6500,
+        resonance: 0.8, volume: 0.7,
+        layers: [
+            { type: "sine", ratio: 1, gain: 0.7 },
+            { type: "sine", ratio: 2.01, gain: 0.22 },
+            { type: "sine", ratio: 3.9, gain: 0.08 }
+        ]
+    }
 };
 
 function ensureAudio() {
@@ -190,65 +217,34 @@ function ensureAudio() {
 
 function noteToMidi(note) {
     const match = note.match(/^([A-G]#?)(-?\d+)$/);
+    if (!match) return null;
 
-    if (!match) {
-        return null;
-    }
+    const index = chromaticNotes.indexOf(match[1]);
+    if (index < 0) return null;
 
-    const noteName = match[1];
-    const noteOctave = Number(match[2]);
-    const noteIndex = chromaticNotes.indexOf(noteName);
-
-    if (noteIndex === -1) {
-        return null;
-    }
-
-    return (noteOctave + 1) * 12 + noteIndex;
+    return (Number(match[2]) + 1) * 12 + index;
 }
 
 function midiToNote(midi) {
-    const noteIndex = ((midi % 12) + 12) % 12;
-    const noteOctave = Math.floor(midi / 12) - 1;
-
-    return `${chromaticNotes[noteIndex]}${noteOctave}`;
+    return `${chromaticNotes[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`;
 }
 
 function getNoteFrequency(note) {
     const midi = noteToMidi(note);
-
-    if (midi === null) {
-        return 0;
-    }
-
-    return 440 * Math.pow(2, (midi - 69) / 12);
+    return midi === null ? 0 : 440 * Math.pow(2, (midi - 69) / 12);
 }
 
 function getChordNotes(rootNote, mode) {
-    if (mode === "off") {
-        return [rootNote];
-    }
+    const root = noteToMidi(rootNote);
+    if (root === null || mode === "off") return [rootNote];
 
-    const rootMidi = noteToMidi(rootNote);
+    const intervals = {
+        major: [0, 4, 7],
+        minor: [0, 3, 7],
+        "7th": [0, 4, 7, 10]
+    };
 
-    if (rootMidi === null) {
-        return [rootNote];
-    }
-
-    let intervals = [];
-
-    if (mode === "major") {
-        intervals = [0, 4, 7];
-    }
-
-    if (mode === "minor") {
-        intervals = [0, 3, 7];
-    }
-
-    if (mode === "7th") {
-        intervals = [0, 4, 7, 10];
-    }
-
-    return intervals.map(interval => midiToNote(rootMidi + interval));
+    return (intervals[mode] || [0]).map(i => midiToNote(root + i));
 }
 
 function getTrack(trackId) {
@@ -261,461 +257,323 @@ function hasSoloTrack() {
 
 function isTrackAudible(trackId) {
     const track = getTrack(trackId);
-
-    if (!track) {
-        return true;
-    }
-
-    if (masterMuted || track.muted) {
-        return false;
-    }
-
-    if (hasSoloTrack() && !track.solo) {
-        return false;
-    }
-
-    return true;
+    if (!track) return false;
+    if (masterMuted || track.muted) return false;
+    return !hasSoloTrack() || track.solo;
 }
 
 function getTrackVolume(trackId) {
     const track = getTrack(trackId);
-
-    if (!track || !isTrackAudible(trackId)) {
-        return 0;
-    }
-
-    return track.volume;
+    return track && isTrackAudible(trackId) ? track.volume : 0;
 }
 
 function getEffectiveMasterVolume() {
     return masterMuted ? 0 : masterVolume;
 }
 
-function createOscillator(frequency, type, volume, duration = null) {
-    ensureAudio();
+function getInstrumentForTrack(trackId) {
+    const track = getTrack(trackId);
+    return track && instrumentSettings[track.instrument]
+        ? track.instrument
+        : "Piano";
+}
 
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
+function getSelectedInstrument() {
+    return getInstrumentForTrack(selectedTrackId);
+}
 
-    oscillator.type = type;
+function getInstrumentSettings(instrument) {
+    const defaults = instrumentSettings[instrument] || instrumentSettings.Piano;
 
-    oscillator.frequency.setValueAtTime(
-        frequency,
-        audioContext.currentTime
-    );
-
-    gainNode.gain.setValueAtTime(
-        volume,
-        audioContext.currentTime
-    );
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start();
-
-    if (duration !== null) {
-        gainNode.gain.exponentialRampToValueAtTime(
-            0.001,
-            audioContext.currentTime + duration
-        );
-
-        oscillator.stop(
-            audioContext.currentTime + duration
-        );
-    }
+    if (instrument !== "Synth") return defaults;
 
     return {
-        oscillator,
-        gainNode
+        ...defaults,
+        attack: Number(synthAttack?.value ?? defaults.attack),
+        release: Number(synthRelease?.value ?? defaults.release),
+        filter: Number(synthFilter?.value ?? defaults.filter),
+        resonance: Number(synthResonance?.value ?? defaults.resonance),
+        volume: Number(synthVolume?.value ?? defaults.volume),
+        layers: [
+            { type: synthWaveform?.value || "sawtooth", ratio: 1, gain: 0.8 },
+            { type: "sine", ratio: 2, gain: 0.15 }
+        ]
     };
 }
 
-function playNote(note, type = waveform, volume = masterVolume) {
-    ensureAudio();
-
-    if (!isTrackAudible("piano")) {
-        return;
-    }
-
-    const frequency = getNoteFrequency(note);
-
-    if (!frequency) {
-        return;
-    }
-
-    if (activeNotes.has(note)) {
-        stopNote(note, 0.03);
-    }
-
-    const trackVolume = getTrackVolume("piano");
-    const finalVolume = Math.max(
-        volume * trackVolume * getEffectiveMasterVolume(),
-        0.001
-    );
-
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.type = type;
-
-    oscillator.frequency.setValueAtTime(
-        frequency,
-        audioContext.currentTime
-    );
-
-    gainNode.gain.setValueAtTime(
-        finalVolume,
-        audioContext.currentTime
-    );
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start();
-
-    activeNotes.set(note, {
-        oscillator,
-        gainNode
-    });
-
-    return oscillator;
+function voiceKey(note, trackId) {
+    return `${trackId}:${note}`;
 }
 
-function stopNote(note, releaseTime = sustain) {
-    const active = activeNotes.get(note);
-
-    if (!active) {
-        return;
-    }
+function stopInstrumentNote(note, trackId, releaseOverride = null) {
+    const key = voiceKey(note, trackId);
+    const voice = activeInstrumentVoices.get(key);
+    if (!voice) return;
 
     const now = audioContext.currentTime;
-    const release = Math.max(releaseTime, 0.03);
+    const release = Math.max(0.03, releaseOverride ?? voice.release);
 
-    active.gainNode.gain.cancelScheduledValues(now);
+    voice.gains.forEach(gain => {
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setTargetAtTime(0, now, Math.max(0.01, release / 4));
+    });
 
-    active.gainNode.gain.setValueAtTime(
-        Math.max(active.gainNode.gain.value, 0.001),
-        now
-    );
+    voice.oscillators.forEach(oscillator => {
+        try {
+            oscillator.stop(now + release + 0.08);
+        } catch (_) {}
+    });
 
-    active.gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        now + release
-    );
-
-    try {
-        active.oscillator.stop(now + release + 0.02);
-    } catch (error) {
-    }
-
-    activeNotes.delete(note);
+    activeInstrumentVoices.delete(key);
 }
 
-function playChord(rootNote) {
+function playNote(note, instrument = null, volume = 1, trackId = selectedTrackId) {
+    ensureAudio();
+
+    const track = getTrack(trackId);
+    if (!track || !isTrackAudible(trackId)) return;
+
+    const selectedInstrument = instrument || getInstrumentForTrack(trackId);
+    const settings = getInstrumentSettings(selectedInstrument);
+    const frequency = getNoteFrequency(note);
+    if (!frequency) return;
+
+    stopInstrumentNote(note, trackId, 0.025);
+
+    const now = audioContext.currentTime;
+    const oscillators = [];
+    const gains = [];
+
+    const level = masterVolume *
+        track.volume *
+        settings.volume *
+        Math.max(0, Math.min(1, volume)) *
+        getEffectiveMasterVolume();
+
+    settings.layers.forEach(layer => {
+        const oscillator = audioContext.createOscillator();
+        const filter = audioContext.createBiquadFilter();
+        const gain = audioContext.createGain();
+
+        oscillator.type = layer.type;
+        oscillator.frequency.setValueAtTime(frequency * layer.ratio, now);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(settings.filter, now);
+        filter.Q.setValueAtTime(settings.resonance, now);
+
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.linearRampToValueAtTime(
+            Math.max(0.0001, level * layer.gain),
+            now + settings.attack
+        );
+
+        oscillator.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now);
+
+        oscillators.push(oscillator);
+        gains.push(gain);
+    });
+
+    activeInstrumentVoices.set(voiceKey(note, trackId), {
+        oscillators,
+        gains,
+        release: settings.release,
+        instrument: selectedInstrument
+    });
+}
+
+function stopNote(note, releaseTime = null, trackId = selectedTrackId) {
+    stopInstrumentNote(note, trackId, releaseTime);
+}
+
+function playChord(rootNote, instrument = getSelectedInstrument(), trackId = selectedTrackId) {
     const notes = getChordNotes(rootNote, chordMode);
-    const chordNotes = [];
-
-    notes.forEach(note => {
-        playNote(note);
-        chordNotes.push(note);
-    });
-
-    activeChords.set(rootNote, chordNotes);
+    notes.forEach(note => playNote(note, instrument, 1, trackId));
+    activeChords.set(`${trackId}:${rootNote}`, notes);
 }
 
-function stopChord(rootNote) {
-    const notes = activeChords.get(rootNote);
-
-    if (!notes) {
-        stopNote(rootNote);
-        return;
-    }
-
-    notes.forEach(note => {
-        stopNote(note);
-    });
-
-    activeChords.delete(rootNote);
+function stopChord(rootNote, trackId = selectedTrackId) {
+    const key = `${trackId}:${rootNote}`;
+    const notes = activeChords.get(key) || [rootNote];
+    notes.forEach(note => stopNote(note, null, trackId));
+    activeChords.delete(key);
 }
 
-function setKeyPressed(keyElement, pressed) {
-    if (!keyElement) {
-        return;
-    }
-
-    keyElement.classList.toggle("pressed", pressed);
+function setKeyPressed(element, pressed) {
+    if (element) element.classList.toggle("pressed", pressed);
 }
 
 function findPianoKey(note) {
-    if (!pianoContainer) {
-        return null;
-    }
-
-    return pianoContainer.querySelector(
-        `.piano-key[data-note="${note}"]`
-    );
+    return pianoContainer?.querySelector(`.piano-key[data-note="${note}"]`) || null;
 }
 
 function renderPiano() {
-    if (!pianoContainer) {
-        return;
-    }
+    if (!pianoContainer) return;
 
     pianoContainer.innerHTML = "";
 
     const whiteNotes = [
-        `C${octave}`,
-        `D${octave}`,
-        `E${octave}`,
-        `F${octave}`,
-        `G${octave}`,
-        `A${octave}`,
-        `B${octave}`,
-        `C${octave + 1}`
+        `C${octave}`, `D${octave}`, `E${octave}`, `F${octave}`,
+        `G${octave}`, `A${octave}`, `B${octave}`, `C${octave + 1}`
     ];
 
-    const whiteKeyboardLabels = [
-        "A",
-        "S",
-        "D",
-        "F",
-        "G",
-        "H",
-        "J",
-        "K"
-    ];
+    const whiteLabels = ["A", "S", "D", "F", "G", "H", "J", "K"];
 
     whiteNotes.forEach((note, index) => {
         const key = document.createElement("button");
-
         key.className = "piano-key white-key";
         key.dataset.note = note;
-        key.dataset.keyboard = whiteKeyboardLabels[index];
-
-        key.innerHTML = `
-            <span>${note}</span>
-            <small>${whiteKeyboardLabels[index]}</small>
-        `;
-
+        key.dataset.keyboard = whiteLabels[index];
+        key.innerHTML = `<span>${note}</span><small>${whiteLabels[index]}</small>`;
         pianoContainer.appendChild(key);
     });
 
     const blackNotes = [
-        `C#${octave}`,
-        `D#${octave}`,
-        `F#${octave}`,
-        `G#${octave}`,
-        `A#${octave}`
+        `C#${octave}`, `D#${octave}`, `F#${octave}`,
+        `G#${octave}`, `A#${octave}`
     ];
 
-    const blackKeyboardLabels = [
-        "W",
-        "E",
-        "T",
-        "Y",
-        "U"
-    ];
-
-    const blackPositions = [
-        11.25,
-        23.75,
-        48.75,
-        61.25,
-        73.75
-    ];
+    const blackLabels = ["W", "E", "T", "Y", "U"];
+    const positions = [11.25, 23.75, 48.75, 61.25, 73.75];
 
     blackNotes.forEach((note, index) => {
         const key = document.createElement("button");
-
         key.className = `piano-key black-key black-${index + 1}`;
         key.dataset.note = note;
-        key.dataset.keyboard = blackKeyboardLabels[index];
-
-        key.style.left = `${blackPositions[index]}%`;
-
-        key.innerHTML = `
-            <span>${note}</span>
-            <small>${blackKeyboardLabels[index]}</small>
-        `;
-
+        key.dataset.keyboard = blackLabels[index];
+        key.style.left = `${positions[index]}%`;
+        key.innerHTML = `<span>${note}</span><small>${blackLabels[index]}</small>`;
         pianoContainer.appendChild(key);
     });
 
     bindPianoEvents();
-
-    if (octaveDisplay) {
-        octaveDisplay.textContent = octave;
-    }
+    if (octaveDisplay) octaveDisplay.textContent = octave;
 }
 
 function getRootNoteFromKeyboardKey(key) {
-    const lowerKey = key.toLowerCase();
-    const noteName = keyboardMap[lowerKey];
-
-    if (!noteName) {
-        return null;
-    }
-
-    if (lowerKey === "k") {
-        return `${noteName}${octave + 1}`;
-    }
-
-    return `${noteName}${octave}`;
+    const lower = key.toLowerCase();
+    const note = keyboardMap[lower];
+    if (!note) return null;
+    return `${note}${lower === "k" ? octave + 1 : octave}`;
 }
 
 function playPianoKey(note, keyElement) {
     ensureAudio();
 
+    const instrument = getSelectedInstrument();
+
     if (chordMode === "off") {
-        playNote(note);
+        playNote(note, instrument, 1, selectedTrackId);
     } else {
-        playChord(note);
+        playChord(note, instrument, selectedTrackId);
     }
 
     setKeyPressed(keyElement, true);
 
     if (currentNote) {
-        currentNote.textContent =
-            chordMode === "off"
-                ? note
-                : `${note} ${chordMode}`;
+        currentNote.textContent = chordMode === "off" ? note : `${note} ${chordMode}`;
     }
 
-    recordNote(note, "piano");
+    recordNote(note, instrument, selectedTrackId);
 }
 
 function releasePianoKey(note, keyElement) {
+    const instrument = getSelectedInstrument();
+
     if (chordMode === "off") {
-        stopNote(note);
+        stopNote(note, null, selectedTrackId);
     } else {
-        stopChord(note);
+        stopChord(note, selectedTrackId);
     }
 
     setKeyPressed(keyElement, false);
-
-    if (currentNote) {
-        currentNote.textContent = "—";
-    }
+    if (currentNote) currentNote.textContent = "—";
 }
 
 function bindPianoEvents() {
-    const keys = pianoContainer.querySelectorAll(".piano-key");
+    if (!pianoContainer) return;
 
-    keys.forEach(key => {
+    pianoContainer.querySelectorAll(".piano-key").forEach(key => {
+        const note = key.dataset.note;
+
         key.addEventListener("pointerdown", event => {
             event.preventDefault();
-
-            const note = key.dataset.note;
-
             playPianoKey(note, key);
         });
 
-        key.addEventListener("pointerup", event => {
-            event.preventDefault();
-
-            const note = key.dataset.note;
-
-            releasePianoKey(note, key);
-        });
-
-        key.addEventListener("pointercancel", event => {
-            event.preventDefault();
-
-            const note = key.dataset.note;
-
-            releasePianoKey(note, key);
+        ["pointerup", "pointercancel"].forEach(type => {
+            key.addEventListener(type, event => {
+                event.preventDefault();
+                releasePianoKey(note, key);
+            });
         });
 
         key.addEventListener("pointerleave", event => {
-            if (event.buttons === 1) {
-                const note = key.dataset.note;
-
-                releasePianoKey(note, key);
-            }
+            if (event.buttons === 1) releasePianoKey(note, key);
         });
     });
 }
 
-function recordNote(note, instrument = "piano") {
-    if (!isRecording) {
-        return;
-    }
-
-    if (!isTrackAudible(selectedTrackId)) {
-        return;
-    }
+function recordNote(note, instrument = null, trackId = selectedTrackId) {
+    if (!isRecording || !getTrack(trackId)) return;
 
     const now = performance.now();
-    const elapsed = now - recordingStartTime;
+    const trackInstrument = instrument || getInstrumentForTrack(trackId);
 
     recording.push({
         note,
-        instrument,
-        trackId: selectedTrackId,
-        time: elapsed,
-        chord: instrument === "piano" ? chordMode : "off"
+        instrument: trackInstrument,
+        trackId,
+        time: now - recordingStartTime,
+        chord: ["Piano", "Electric Piano"].includes(trackInstrument)
+            ? chordMode
+            : "off"
     });
 
+    recording.sort((a, b) => a.time - b.time);
     updateRecordingDisplay();
     renderArrangement();
+    markUnsaved();
 }
 
 function updateRecordingDisplay() {
     if (recordingDisplay) {
-        if (recording.length === 0) {
-            recordingDisplay.textContent = "No notes recorded yet.";
-        } else {
-            recordingDisplay.textContent = recording
-                .map(item => {
-                    const instrument =
-                        item.instrument === "bass"
-                            ? "Bass"
-                            : "Piano";
-
-                    if (item.chord && item.chord !== "off") {
-                        return `${instrument}: ${item.note} (${item.chord})`;
-                    }
-
-                    return `${instrument}: ${item.note}`;
-                })
-                .join(" • ");
-        }
+        recordingDisplay.textContent = recording.length
+            ? recording.map(item => {
+                const track = getTrack(item.trackId);
+                const name = track?.name || item.instrument || "Instrument";
+                return `${name}: ${item.note}${item.chord && item.chord !== "off" ? ` (${item.chord})` : ""}`;
+            }).join(" • ")
+            : "No notes recorded yet.";
     }
 
-    if (recordingNoteCount) {
-        recordingNoteCount.textContent = recording.length;
-    }
-
+    if (recordingNoteCount) recordingNoteCount.textContent = recording.length;
     updateRecordingDuration();
 }
 
 function updateRecordingDuration() {
-    if (!recordingDuration) {
-        return;
-    }
+    if (!recordingDuration) return;
 
-    if (recording.length === 0) {
-        recordingDuration.textContent = "0.0s";
-        return;
-    }
+    let duration = recording.length
+        ? Math.max(...recording.map(item => item.time))
+        : 0;
 
-    let duration = recording[recording.length - 1].time;
+    if (isRecording) duration = performance.now() - recordingStartTime;
 
-    if (isRecording) {
-        duration = performance.now() - recordingStartTime;
-    }
-
-    recordingDuration.textContent =
-        `${Math.max(duration / 1000, 0).toFixed(1)}s`;
+    recordingDuration.textContent = `${Math.max(duration / 1000, 0).toFixed(1)}s`;
 }
 
 function startRecording() {
     ensureAudio();
 
+    if (isRecording) return;
+
     stopRecordingPlayback();
 
-    recording = [];
+    // Do not clear recording here. Each take adds notes to the existing project.
     recordingStartTime = performance.now();
     isRecording = true;
 
@@ -725,29 +583,20 @@ function startRecording() {
     }
 
     if (recordingStatus) {
-        recordingStatus.textContent =
-            `Recording ${getTrack(selectedTrackId)?.name || ""}`;
+        recordingStatus.textContent = `Recording ${getTrack(selectedTrackId)?.name || ""}`;
     }
 
     updateRecordingDisplay();
     renderArrangement();
 
     clearInterval(recordingTimer);
-
-    recordingTimer = setInterval(() => {
-        updateRecordingDuration();
-    }, 100);
+    recordingTimer = setInterval(updateRecordingDuration, 100);
 }
 
 function stopRecording() {
-    if (!isRecording) {
-        return;
-    }
-
-    updateRecordingDuration();
+    if (!isRecording) return;
 
     isRecording = false;
-
     clearInterval(recordingTimer);
     recordingTimer = null;
 
@@ -757,10 +606,7 @@ function stopRecording() {
     }
 
     if (recordingStatus) {
-        recordingStatus.textContent =
-            recording.length > 0
-                ? "Recording saved"
-                : "Ready";
+        recordingStatus.textContent = recording.length ? "Recording saved" : "Ready";
     }
 
     updateRecordingDisplay();
@@ -769,21 +615,15 @@ function stopRecording() {
 }
 
 function toggleRecording() {
-    if (isRecording) {
-        stopRecording();
-    } else {
-        startRecording();
-    }
+    if (isRecording) stopRecording();
+    else startRecording();
 }
 
 function clearRecording() {
     stopRecordingPlayback();
-
     recording = [];
 
-    if (recordingStatus) {
-        recordingStatus.textContent = "Ready";
-    }
+    if (recordingStatus) recordingStatus.textContent = "Ready";
 
     updateRecordingDisplay();
     renderArrangement();
@@ -791,16 +631,12 @@ function clearRecording() {
 }
 
 function playRecording() {
-    if (recording.length === 0) {
-        if (recordingStatus) {
-            recordingStatus.textContent = "Nothing to play";
-        }
-
+    if (!recording.length) {
+        if (recordingStatus) recordingStatus.textContent = "Nothing to play";
         return;
     }
 
     ensureAudio();
-
     stopRecordingPlayback();
 
     isPlaying = true;
@@ -817,9 +653,7 @@ function playRecording() {
         playRecordingButton.classList.add("active");
     }
 
-    if (recordingStatus) {
-        recordingStatus.textContent = "Playing recording";
-    }
+    if (recordingStatus) recordingStatus.textContent = "Playing recording";
 
     scheduleNextRecordingNote();
 }
@@ -831,53 +665,34 @@ function scheduleNextRecordingNote() {
     }
 
     const noteData = recording[playbackIndex];
-
-    const currentElapsed =
-        performance.now() - playbackStartTime;
-
-    const delay = Math.max(
-        0,
-        noteData.time - currentElapsed
-    );
+    const elapsed = performance.now() - playbackStartTime;
+    const delay = Math.max(0, noteData.time - elapsed);
 
     playbackTimer = setTimeout(() => {
-        if (!isPlaying) {
-            return;
-        }
+        if (!isPlaying) return;
 
-        const note = noteData.note;
-        const storedChord = noteData.chord || "off";
-        const instrument = noteData.instrument || "piano";
+        const trackId = noteData.trackId || "piano";
+        const track = getTrack(trackId);
+        const instrument = noteData.instrument || getInstrumentForTrack(trackId);
 
-        if (instrument === "bass") {
-            if (isTrackAudible(noteData.trackId || "bass")) {
-                playBassNote(note);
-                setTimeout(() => {
-                    stopBassNote(note);
-                }, Math.max(100, sustain * 500));
-            }
-        } else {
+        if (track && isTrackAudible(trackId)) {
             const notes = getChordNotes(
-                note,
-                storedChord
+                noteData.note,
+                noteData.chord || "off"
             );
 
-            notes.forEach(chordNote => {
-                playNote(chordNote);
-            });
+            notes.forEach(note => playNote(note, instrument, 1, trackId));
 
+            const release = instrumentSettings[instrument]?.release ?? 0.15;
             setTimeout(() => {
-                notes.forEach(chordNote => {
-                    stopNote(chordNote, 0.12);
-                });
+                notes.forEach(note => stopNote(note, release, trackId));
             }, Math.max(100, sustain * 500));
         }
 
         playbackIndex++;
 
         if (timelinePosition) {
-            timelinePosition.textContent =
-                `${(noteData.time / 1000).toFixed(1)}s`;
+            timelinePosition.textContent = `${(noteData.time / 1000).toFixed(1)}s`;
         }
 
         scheduleNextRecordingNote();
@@ -886,18 +701,18 @@ function scheduleNextRecordingNote() {
 
 function stopRecordingPlayback() {
     isPlaying = false;
-
     clearTimeout(playbackTimer);
     playbackTimer = null;
 
-    activeNotes.forEach((_, note) => {
-        stopNote(note, 0.05);
+    activeInstrumentVoices.forEach((voice, key) => {
+        const split = key.indexOf(":");
+        const trackId = key.slice(0, split);
+        const note = key.slice(split + 1);
+        stopNote(note, 0.05, trackId);
     });
 
-    activeBassNotes.forEach((_, note) => {
-        stopBassNote(note);
-    });
-
+    activeNotes.forEach((_, note) => stopNote(note, 0.05));
+    activeBassNotes.forEach((_, note) => stopBassNote(note));
     activeChords.clear();
 
     if (playButton) {
@@ -911,110 +726,62 @@ function stopRecordingPlayback() {
     }
 
     if (recordingStatus && !isRecording) {
-        recordingStatus.textContent =
-            recording.length > 0
-                ? "Recording saved"
-                : "Ready";
+        recordingStatus.textContent = recording.length ? "Recording saved" : "Ready";
     }
 }
 
 function updateVolume() {
-    if (!volumeSlider) {
-        return;
-    }
-
-    masterVolume = Number(volumeSlider.value);
-
-    if (volumeDisplay) {
-        volumeDisplay.textContent =
-            `${Math.round(masterVolume * 100)}%`;
-    }
-
+    if (volumeSlider) masterVolume = Number(volumeSlider.value);
+    if (volumeDisplay) volumeDisplay.textContent = `${Math.round(masterVolume * 100)}%`;
     updateMasterVolumeDisplay();
 }
 
 function updateMasterVolumeDisplay() {
     if (masterVolumeDisplay) {
-        masterVolumeDisplay.textContent =
-            `${Math.round(masterVolume * 100)}%`;
+        masterVolumeDisplay.textContent = `${Math.round(masterVolume * 100)}%`;
     }
 }
 
 function updateWaveform() {
-    if (!waveformSelect) {
-        return;
-    }
-
-    waveform = waveformSelect.value;
+    if (waveformSelect) waveform = waveformSelect.value;
 }
 
 function updateSustain() {
-    if (!sustainSlider) {
-        return;
-    }
-
+    if (!sustainSlider) return;
     sustain = Number(sustainSlider.value);
-
-    if (sustainDisplay) {
-        sustainDisplay.textContent =
-            `${sustain.toFixed(1)}s`;
-    }
+    if (sustainDisplay) sustainDisplay.textContent = `${sustain.toFixed(1)}s`;
 }
 
 function updateChordMode() {
-    if (!chordModeSelect) {
-        return;
-    }
-
+    if (!chordModeSelect) return;
     chordMode = chordModeSelect.value;
 
-    activeChords.forEach((_, rootNote) => {
-        stopChord(rootNote);
+    activeChords.forEach((_, key) => {
+        const split = key.indexOf(":");
+        stopChord(key.slice(split + 1), key.slice(0, split));
     });
 }
 
 function changeOctave(amount) {
-    const newOctave = Math.max(
-        2,
-        Math.min(5, octave + amount)
-    );
+    const next = Math.max(2, Math.min(5, octave + amount));
+    if (next === octave) return;
 
-    if (newOctave === octave) {
-        return;
-    }
-
-    activeNotes.forEach((_, note) => {
-        stopNote(note, 0.03);
+    activeInstrumentVoices.forEach((voice, key) => {
+        const split = key.indexOf(":");
+        stopNote(key.slice(split + 1), 0.03, key.slice(0, split));
     });
 
-    octave = newOctave;
-
+    octave = next;
     renderPiano();
 }
 
 function updateBpm(value) {
-    let newBpm = Number(value);
+    let next = Number(value);
+    if (!Number.isFinite(next)) next = bpm;
+    bpm = Math.round(Math.max(MIN_BPM, Math.min(MAX_BPM, next)));
 
-    if (!Number.isFinite(newBpm)) {
-        newBpm = bpm;
-    }
-
-    newBpm = Math.round(
-        Math.max(
-            MIN_BPM,
-            Math.min(MAX_BPM, newBpm)
-        )
-    );
-
-    bpm = newBpm;
-
-    if (bpmInput) {
-        bpmInput.value = bpm;
-    }
-
-    if (bpmDisplay) {
-        bpmDisplay.textContent = `${bpm} BPM`;
-    }
+    if (bpmInput) bpmInput.value = bpm;
+    if (bpmDisplay) bpmDisplay.textContent = `${bpm} BPM`;
 
     if (isDrumPlaying) {
         stopDrums();
@@ -1032,248 +799,106 @@ function getDrumStepLength() {
 }
 
 function getDrumStepDelay(step) {
-    const baseLength = getDrumStepLength();
-
-    if (swing <= 0) {
-        return baseLength;
-    }
-
-    if (step % 2 === 0) {
-        return baseLength * (1 + swing);
-    }
-
-    return baseLength * (1 - swing);
+    const length = getDrumStepLength();
+    return swing <= 0 ? length : length * (step % 2 === 0 ? 1 + swing : 1 - swing);
 }
 
 function playKick() {
     ensureAudio();
-
-    if (!isTrackAudible("drums")) {
-        return;
-    }
+    if (!isTrackAudible("drums")) return;
 
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
 
     oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(150, now);
+    oscillator.frequency.exponentialRampToValueAtTime(45, now + 0.18);
 
-    oscillator.frequency.setValueAtTime(
-        150,
-        audioContext.currentTime
-    );
-
-    oscillator.frequency.exponentialRampToValueAtTime(
-        45,
-        audioContext.currentTime + 0.18
-    );
-
-    const finalVolume =
-        drumVolume *
-        getTrackVolume("drums") *
-        getEffectiveMasterVolume();
-
-    gain.gain.setValueAtTime(
-        Math.max(finalVolume, 0.001),
-        audioContext.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime + 0.18
-    );
+    const level = drumVolume * getTrackVolume("drums") * getEffectiveMasterVolume();
+    gain.gain.setValueAtTime(Math.max(level, 0.001), now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
 
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
+}
 
-    oscillator.start();
+function playNoiseHit(duration, filterType, frequency, level) {
+    ensureAudio();
+    if (!isTrackAudible("drums")) return;
 
-    oscillator.stop(
-        audioContext.currentTime + 0.2
-    );
+    const length = Math.floor(audioContext.sampleRate * duration);
+    const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+
+    const source = audioContext.createBufferSource();
+    const filter = audioContext.createBiquadFilter();
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
+
+    source.buffer = buffer;
+    filter.type = filterType;
+    filter.frequency.value = frequency;
+
+    const volume = drumVolume * level * getTrackVolume("drums") * getEffectiveMasterVolume();
+    gain.gain.setValueAtTime(Math.max(volume, 0.001), now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioContext.destination);
+    source.start(now);
 }
 
 function playSnare() {
-    ensureAudio();
-
-    if (!isTrackAudible("drums")) {
-        return;
-    }
-
-    const noiseBuffer = audioContext.createBuffer(
-        1,
-        Math.floor(audioContext.sampleRate * 0.2),
-        audioContext.sampleRate
-    );
-
-    const data = noiseBuffer.getChannelData(0);
-
-    for (let i = 0; i < data.length; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-
-    const noise = audioContext.createBufferSource();
-    const noiseFilter = audioContext.createBiquadFilter();
-    const noiseGain = audioContext.createGain();
-
-    noise.buffer = noiseBuffer;
-
-    noiseFilter.type = "highpass";
-    noiseFilter.frequency.value = 1200;
-
-    const finalVolume =
-        drumVolume *
-        0.8 *
-        getTrackVolume("drums") *
-        getEffectiveMasterVolume();
-
-    noiseGain.gain.setValueAtTime(
-        Math.max(finalVolume, 0.001),
-        audioContext.currentTime
-    );
-
-    noiseGain.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime + 0.2
-    );
-
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(audioContext.destination);
-
-    noise.start();
+    playNoiseHit(0.2, "highpass", 1200, 0.8);
 }
 
 function playHiHat() {
-    ensureAudio();
-
-    if (!isTrackAudible("drums")) {
-        return;
-    }
-
-    const noiseBuffer = audioContext.createBuffer(
-        1,
-        Math.floor(audioContext.sampleRate * 0.08),
-        audioContext.sampleRate
-    );
-
-    const data = noiseBuffer.getChannelData(0);
-
-    for (let i = 0; i < data.length; i++) {
-        data[i] = Math.random() * 2 - 1;
-    }
-
-    const noise = audioContext.createBufferSource();
-    const filter = audioContext.createBiquadFilter();
-    const gain = audioContext.createGain();
-
-    noise.buffer = noiseBuffer;
-
-    filter.type = "highpass";
-    filter.frequency.value = 5000;
-
-    const finalVolume =
-        drumVolume *
-        0.5 *
-        getTrackVolume("drums") *
-        getEffectiveMasterVolume();
-
-    gain.gain.setValueAtTime(
-        Math.max(finalVolume, 0.001),
-        audioContext.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime + 0.08
-    );
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioContext.destination);
-
-    noise.start();
+    playNoiseHit(0.08, "highpass", 5000, 0.5);
 }
 
 function playDrumSound(type) {
-    ensureAudio();
-
-    switch (type) {
-        case "kick":
-            playKick();
-            break;
-
-        case "snare":
-            playSnare();
-            break;
-
-        case "hihat":
-            playHiHat();
-            break;
-    }
+    if (type === "kick") playKick();
+    if (type === "snare") playSnare();
+    if (type === "hihat") playHiHat();
 }
 
 function getDrumInstrument(row) {
-    const firstStep = row.querySelector(".step");
-
-    if (!firstStep) {
-        return null;
-    }
-
-    return firstStep.dataset.instrument || null;
+    return row.querySelector(".step")?.dataset.instrument || null;
 }
 
 function playDrumStep() {
     const currentStep = drumStep + 1;
 
     drumRows.forEach(row => {
-        const activeStep = row.querySelector(
-            `.step[data-step="${currentStep}"]`
-        );
+        row.querySelectorAll(".step").forEach(step => step.classList.remove("playing"));
 
-        row.querySelectorAll(".step").forEach(step => {
-            step.classList.remove("playing");
-        });
+        const step = row.querySelector(`.step[data-step="${currentStep}"]`);
+        if (!step) return;
 
-        if (!activeStep) {
-            return;
-        }
-
-        activeStep.classList.add("playing");
-
-        if (activeStep.classList.contains("active")) {
-            playDrumSound(
-                activeStep.dataset.instrument
-            );
-        }
+        step.classList.add("playing");
+        if (step.classList.contains("active")) playDrumSound(step.dataset.instrument);
     });
 
     updateBeatIndicators();
 }
 
 function scheduleNextDrumStep() {
-    if (!isDrumPlaying) {
-        return;
-    }
-
+    if (!isDrumPlaying) return;
     playDrumStep();
-
     const delay = getDrumStepDelay(drumStep);
-
-    drumStep =
-        (drumStep + 1) % DRUM_STEPS;
-
-    drumTimer = setTimeout(
-        scheduleNextDrumStep,
-        delay
-    );
+    drumStep = (drumStep + 1) % DRUM_STEPS;
+    drumTimer = setTimeout(scheduleNextDrumStep, delay);
 }
 
 function startDrums() {
     ensureAudio();
-
-    if (isDrumPlaying) {
-        return;
-    }
+    if (isDrumPlaying) return;
 
     isDrumPlaying = true;
     drumStep = 0;
@@ -1288,14 +913,11 @@ function startDrums() {
 
 function stopDrums() {
     isDrumPlaying = false;
-
     clearTimeout(drumTimer);
     drumTimer = null;
 
     drumRows.forEach(row => {
-        row.querySelectorAll(".step").forEach(step => {
-            step.classList.remove("playing");
-        });
+        row.querySelectorAll(".step").forEach(step => step.classList.remove("playing"));
     });
 
     if (drumPlayButton) {
@@ -1307,40 +929,25 @@ function stopDrums() {
 function clearDrums() {
     drumRows.forEach(row => {
         row.querySelectorAll(".step").forEach(step => {
-            step.classList.remove("active");
-            step.classList.remove("playing");
+            step.classList.remove("active", "playing");
         });
     });
 }
 
 function updateDrumVolume() {
-    if (!drumVolumeSlider) {
-        return;
-    }
-
+    if (!drumVolumeSlider) return;
     drumVolume = Number(drumVolumeSlider.value);
-
-    if (drumVolumeDisplay) {
-        drumVolumeDisplay.textContent =
-            `${Math.round(drumVolume * 100)}%`;
-    }
+    if (drumVolumeDisplay) drumVolumeDisplay.textContent = `${Math.round(drumVolume * 100)}%`;
 }
 
 function updateSwing() {
-    if (!swingSlider) {
-        return;
-    }
-
+    if (!swingSlider) return;
     swing = Number(swingSlider.value) / 100;
-
-    if (swingDisplay) {
-        swingDisplay.textContent =
-            `${Math.round(swing * 100)}%`;
-    }
+    if (swingDisplay) swingDisplay.textContent = `${Math.round(swing * 100)}%`;
 }
 
-function toggleDrumStep(stepElement) {
-    stepElement.classList.toggle("active");
+function toggleDrumStep(element) {
+    element.classList.toggle("active");
 }
 
 function setDrumPattern(pattern) {
@@ -1352,147 +959,81 @@ function setDrumPattern(pattern) {
 
     drumRows.forEach(row => {
         const type = getDrumInstrument(row);
+        if (!type) return;
 
-        if (!type) {
-            return;
-        }
-
-        const activeSteps = rows[type] || [];
-
-        row.querySelectorAll(".step").forEach(
-            (step, index) => {
-                step.classList.toggle(
-                    "active",
-                    activeSteps.includes(index + 1)
-                );
-            }
-        );
+        row.querySelectorAll(".step").forEach((step, index) => {
+            step.classList.toggle("active", (rows[type] || []).includes(index + 1));
+        });
     });
 }
 
 function getDrumPattern() {
-    const pattern = {
-        kick: [],
-        snare: [],
-        hihat: []
-    };
+    const pattern = { kick: [], snare: [], hihat: [] };
 
     drumRows.forEach(row => {
         const type = getDrumInstrument(row);
+        if (!type || !pattern[type]) return;
 
-        if (!type || !pattern[type]) {
-            return;
-        }
-
-        row.querySelectorAll(".step").forEach(
-            (step, index) => {
-                if (step.classList.contains("active")) {
-                    pattern[type].push(index + 1);
-                }
-            }
-        );
+        row.querySelectorAll(".step").forEach((step, index) => {
+            if (step.classList.contains("active")) pattern[type].push(index + 1);
+        });
     });
 
     return pattern;
 }
 
 function updateBeatIndicators() {
-    const indicators =
-        document.querySelectorAll(".beat");
-
-    indicators.forEach((indicator, index) => {
-        indicator.classList.toggle(
-            "active",
-            index === drumStep % 4
-        );
+    document.querySelectorAll(".beat").forEach((beat, index) => {
+        beat.classList.toggle("active", index === drumStep % 4);
     });
 }
 
 function playMetronomeClick() {
     ensureAudio();
+    if (masterMuted) return;
 
-    if (masterMuted) {
-        return;
-    }
-
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gainNode =
-        audioContext.createGain();
-
-    oscillator.type = "square";
-
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    const now = audioContext.currentTime;
     const accent = metronomeBeat === 0;
 
-    oscillator.frequency.setValueAtTime(
-        accent ? 1200 : 800,
-        audioContext.currentTime
-    );
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(accent ? 1200 : 800, now);
+    gain.gain.setValueAtTime((accent ? 0.2 : 0.1) * getEffectiveMasterVolume(), now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
 
-    gainNode.gain.setValueAtTime(
-        (accent ? 0.2 : 0.1) * getEffectiveMasterVolume(),
-        audioContext.currentTime
-    );
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start(now);
+    oscillator.stop(now + 0.06);
 
-    gainNode.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioContext.currentTime + 0.05
-    );
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start();
-
-    oscillator.stop(
-        audioContext.currentTime + 0.06
-    );
-
-    metronomeBeat =
-        (metronomeBeat + 1) % 4;
-
+    metronomeBeat = (metronomeBeat + 1) % 4;
     updateBeatIndicators();
 }
 
 function startMetronome() {
-    if (isMetronomeOn) {
-        return;
-    }
+    if (isMetronomeOn) return;
 
     ensureAudio();
-
     isMetronomeOn = true;
     metronomeBeat = 0;
 
     if (metronomeButton) {
-        metronomeButton.textContent =
-            "Metronome On";
-
+        metronomeButton.textContent = "Metronome On";
         metronomeButton.classList.add("active");
     }
 
     playMetronomeClick();
-
-    const interval =
-        (60 / bpm) * 1000;
-
-    metronomeTimer = setInterval(
-        playMetronomeClick,
-        interval
-    );
+    metronomeTimer = setInterval(playMetronomeClick, (60 / bpm) * 1000);
 }
 
 function stopMetronome() {
     isMetronomeOn = false;
-
     clearInterval(metronomeTimer);
     metronomeTimer = null;
 
     if (metronomeButton) {
-        metronomeButton.textContent =
-            "Metronome: Off";
-
+        metronomeButton.textContent = "Metronome: Off";
         metronomeButton.classList.remove("active");
     }
 }
@@ -1500,407 +1041,180 @@ function stopMetronome() {
 function tapTempo() {
     const now = performance.now();
 
-    if (
-        tapTimes.length > 0 &&
-        now - tapTimes[tapTimes.length - 1] > 2000
-    ) {
+    if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) {
         tapTimes = [];
     }
 
     tapTimes.push(now);
-
-    if (tapTimes.length > 6) {
-        tapTimes.shift();
-    }
+    if (tapTimes.length > 6) tapTimes.shift();
 
     clearTimeout(tapResetTimer);
-
     tapResetTimer = setTimeout(() => {
         tapTimes = [];
-
-        if (tapTempoDisplay) {
-            tapTempoDisplay.textContent = "0 taps";
-        }
+        if (tapTempoDisplay) tapTempoDisplay.textContent = "0 taps";
     }, 2000);
 
     if (tapTimes.length >= 2) {
         let total = 0;
+        for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
 
-        for (let i = 1; i < tapTimes.length; i++) {
-            total +=
-                tapTimes[i] - tapTimes[i - 1];
-        }
-
-        const average =
-            total / (tapTimes.length - 1);
-
-        const calculatedBpm =
-            60000 / average;
-
-        updateBpm(calculatedBpm);
-
-        if (tapTempoDisplay) {
-            tapTempoDisplay.textContent =
-                `${Math.round(bpm)} BPM`;
-        }
+        updateBpm(60000 / (total / (tapTimes.length - 1)));
+        if (tapTempoDisplay) tapTempoDisplay.textContent = `${bpm} BPM`;
     } else if (tapTempoDisplay) {
-        tapTempoDisplay.textContent =
-            "Tap again";
+        tapTempoDisplay.textContent = "Tap again";
     }
 }
 
 function playBassNote(note, keyElement = null) {
-    ensureAudio();
+    if (!getTrack("bass")) return;
 
-    if (!isTrackAudible("bass")) {
-        return;
-    }
+    playNote(note, getInstrumentForTrack("bass"), 0.8, "bass");
 
-    const frequency =
-        getNoteFrequency(note);
-
-    if (!frequency) {
-        return;
-    }
-
-    if (activeBassNotes.has(note)) {
-        stopBassNote(
-            note,
-            keyElement
-        );
-    }
-
-    const oscillator =
-        audioContext.createOscillator();
-
-    const gainNode =
-        audioContext.createGain();
-
-    oscillator.type = "sawtooth";
-
-    oscillator.frequency.setValueAtTime(
-        frequency,
-        audioContext.currentTime
-    );
-
-    const finalVolume =
-        masterVolume *
-        0.45 *
-        getTrackVolume("bass") *
-        getEffectiveMasterVolume();
-
-    gainNode.gain.setValueAtTime(
-        Math.max(finalVolume, 0.001),
-        audioContext.currentTime
-    );
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start();
-
-    activeBassNotes.set(note, {
-        oscillator,
-        gainNode
-    });
-
-    if (keyElement) {
-        keyElement.classList.add("pressed");
-    }
-
-    if (currentBassNote) {
-        currentBassNote.textContent = note;
-    }
+    if (keyElement) keyElement.classList.add("pressed");
+    if (currentBassNote) currentBassNote.textContent = note;
 
     if (isRecording && keyElement) {
-        recordNote(note, "bass");
+        recordNote(note, getInstrumentForTrack("bass"), "bass");
     }
 }
 
 function stopBassNote(note, keyElement = null) {
-    const active =
-        activeBassNotes.get(note);
-
-    if (active) {
-        const now =
-            audioContext.currentTime;
-
-        active.gainNode.gain.cancelScheduledValues(now);
-
-        active.gainNode.gain.setValueAtTime(
-            Math.max(
-                active.gainNode.gain.value,
-                0.001
-            ),
-            now
-        );
-
-        active.gainNode.gain.exponentialRampToValueAtTime(
-            0.001,
-            now + 0.15
-        );
-
-        try {
-            active.oscillator.stop(
-                now + 0.17
-            );
-        } catch (error) {
-        }
-
-        activeBassNotes.delete(note);
-    }
-
-    if (keyElement) {
-        keyElement.classList.remove("pressed");
-    }
-
-    if (currentBassNote) {
-        currentBassNote.textContent = "—";
-    }
+    stopNote(note, null, "bass");
+    if (keyElement) keyElement.classList.remove("pressed");
+    if (currentBassNote) currentBassNote.textContent = "—";
 }
 
 function bindBassEvents() {
-    const bassKeys =
-        document.querySelectorAll(".bass-key");
-
-    bassKeys.forEach(key => {
+    document.querySelectorAll(".bass-key").forEach(key => {
         const note = key.dataset.note;
+        if (!note) return;
 
-        if (!note) {
-            return;
-        }
+        key.addEventListener("pointerdown", event => {
+            event.preventDefault();
+            playBassNote(note, key);
+        });
 
-        key.addEventListener(
-            "pointerdown",
-            event => {
+        ["pointerup", "pointercancel"].forEach(type => {
+            key.addEventListener(type, event => {
                 event.preventDefault();
+                stopBassNote(note, key);
+            });
+        });
 
-                playBassNote(
-                    note,
-                    key
-                );
-            }
-        );
-
-        key.addEventListener(
-            "pointerup",
-            event => {
-                event.preventDefault();
-
-                stopBassNote(
-                    note,
-                    key
-                );
-            }
-        );
-
-        key.addEventListener(
-            "pointercancel",
-            event => {
-                event.preventDefault();
-
-                stopBassNote(
-                    note,
-                    key
-                );
-            }
-        );
-
-        key.addEventListener(
-            "pointerleave",
-            event => {
-                if (event.buttons === 1) {
-                    stopBassNote(
-                        note,
-                        key
-                    );
-                }
-            }
-        );
+        key.addEventListener("pointerleave", event => {
+            if (event.buttons === 1) stopBassNote(note, key);
+        });
     });
 }
 
 function createTrack() {
-    const number =
-        tracks.length + 1;
-
-    const id =
-        `track-${Date.now()}`;
+    const id = `track-${Date.now()}`;
 
     tracks.push({
         id,
-        name: `Track ${number}`,
+        name: `Track ${tracks.length + 1}`,
         instrument: "Piano",
         volume: 1,
         muted: false,
         solo: false,
-        colour:
-            trackColours[
-                tracks.length % trackColours.length
-            ]
+        colour: trackColours[tracks.length % trackColours.length]
     });
 
     selectedTrackId = id;
-
     renderTracks();
+    updateInstrumentSelector();
     renderArrangement();
     markUnsaved();
 }
 
 function renameTrack(trackId) {
     const track = getTrack(trackId);
+    if (!track) return;
 
-    if (!track) {
-        return;
-    }
+    const name = prompt("Track name:", track.name);
+    if (!name) return;
 
-    const newName =
-        prompt("Track name:", track.name);
-
-    if (!newName) {
-        return;
-    }
-
-    track.name =
-        newName.trim().slice(0, 30) ||
-        track.name;
-
+    track.name = name.trim().slice(0, 30) || track.name;
     renderTracks();
     renderArrangement();
     markUnsaved();
 }
 
 function deleteTrack(trackId) {
-    if (
-        trackId === "piano" ||
-        trackId === "bass" ||
-        trackId === "drums"
-    ) {
-        if (tracks.length <= 3) {
-            alert("The main Groove tracks cannot all be removed.");
-            return;
-        }
-    }
-
-    const index =
-        tracks.findIndex(
-            track => track.id === trackId
-        );
-
-    if (index === -1) {
+    if (["piano", "bass", "drums"].includes(trackId) && tracks.length <= 3) {
+        alert("The main Groove tracks cannot all be removed.");
         return;
     }
 
-    const track =
-        tracks[index];
+    const index = tracks.findIndex(track => track.id === trackId);
+    if (index < 0) return;
 
-    if (
-        !confirm(
-            `Delete "${track.name}"?`
-        )
-    ) {
-        return;
-    }
+    if (!confirm(`Delete "${tracks[index].name}"?`)) return;
 
     tracks.splice(index, 1);
+    recording = recording.filter(item => item.trackId !== trackId);
 
-    recording =
-        recording.filter(
-            item => item.trackId !== trackId
-        );
+    activeInstrumentVoices.forEach((voice, key) => {
+        if (key.startsWith(`${trackId}:`)) {
+            const note = key.slice(trackId.length + 1);
+            stopNote(note, 0.03, trackId);
+        }
+    });
 
-    if (selectedTrackId === trackId) {
-        selectedTrackId =
-            tracks[0]?.id || null;
-    }
+    if (selectedTrackId === trackId) selectedTrackId = tracks[0]?.id || null;
 
     renderTracks();
+    updateInstrumentSelector();
     renderArrangement();
     updateRecordingDisplay();
     markUnsaved();
 }
 
 function selectTrack(trackId) {
-    if (!getTrack(trackId)) {
-        return;
-    }
+    if (!getTrack(trackId)) return;
 
     selectedTrackId = trackId;
+    updateInstrumentSelector();
 
-    const track =
-        getTrack(trackId);
-
-    if (selectedTrackDisplay) {
-        selectedTrackDisplay.textContent =
-            `${track.name} selected`;
-    }
+    const track = getTrack(trackId);
+    if (selectedTrackDisplay) selectedTrackDisplay.textContent = `${track.name} selected`;
 
     renderTracks();
     renderArrangement();
 }
 
 function toggleTrackMute(trackId) {
-    const track =
-        getTrack(trackId);
+    const track = getTrack(trackId);
+    if (!track) return;
 
-    if (!track) {
-        return;
-    }
-
-    track.muted =
-        !track.muted;
-
+    track.muted = !track.muted;
     renderTracks();
     markUnsaved();
 }
 
 function toggleTrackSolo(trackId) {
-    const track =
-        getTrack(trackId);
+    const track = getTrack(trackId);
+    if (!track) return;
 
-    if (!track) {
-        return;
-    }
-
-    track.solo =
-        !track.solo;
-
+    track.solo = !track.solo;
     renderTracks();
     markUnsaved();
 }
 
 function updateTrackVolume(trackId, value) {
-    const track =
-        getTrack(trackId);
+    const track = getTrack(trackId);
+    if (!track) return;
 
-    if (!track) {
-        return;
-    }
-
-    track.volume =
-        Number(value);
-
+    track.volume = Number(value);
     markUnsaved();
 }
 
 function cycleTrackColour(trackId) {
-    const track =
-        getTrack(trackId);
+    const track = getTrack(trackId);
+    if (!track) return;
 
-    if (!track) {
-        return;
-    }
-
-    const currentIndex =
-        trackColours.indexOf(track.colour);
-
-    const nextIndex =
-        currentIndex === -1
-            ? 0
-            : (currentIndex + 1) % trackColours.length;
-
-    track.colour =
-        trackColours[nextIndex];
+    const index = trackColours.indexOf(track.colour);
+    track.colour = trackColours[index < 0 ? 0 : (index + 1) % trackColours.length];
 
     renderTracks();
     renderArrangement();
@@ -1908,364 +1222,143 @@ function cycleTrackColour(trackId) {
 }
 
 function renderTracks() {
-    if (!trackList) {
-        return;
-    }
-
+    if (!trackList) return;
     trackList.innerHTML = "";
 
     tracks.forEach((track, index) => {
-        const item =
-            document.createElement("div");
+        const item = document.createElement("div");
+        item.className = "track-item";
 
-        item.className =
-            "track-item";
+        if (track.id === selectedTrackId) item.classList.add("selected");
+        if (track.muted) item.classList.add("muted");
+        if (track.solo) item.classList.add("solo");
 
-        if (track.id === selectedTrackId) {
-            item.classList.add("selected");
-        }
+        item.addEventListener("click", () => selectTrack(track.id));
 
-        if (track.muted) {
-            item.classList.add("muted");
-        }
+        const top = document.createElement("div");
+        top.className = "track-top";
 
-        if (track.solo) {
-            item.classList.add("solo");
-        }
+        const number = document.createElement("span");
+        number.className = "track-number";
+        number.textContent = String(index + 1).padStart(2, "0");
 
-        item.addEventListener(
-            "click",
-            () => selectTrack(track.id)
-        );
+        const colour = document.createElement("span");
+        colour.className = "track-colour";
+        colour.style.background = track.colour;
+        colour.title = "Change track colour";
+        colour.addEventListener("click", event => {
+            event.stopPropagation();
+            cycleTrackColour(track.id);
+        });
 
-        const top =
-            document.createElement("div");
+        const name = document.createElement("div");
+        name.className = "track-name";
+        name.innerHTML = `<strong>${escapeHtml(track.name)}</strong><span>${escapeHtml(track.instrument)}</span>`;
+        name.addEventListener("dblclick", event => {
+            event.stopPropagation();
+            renameTrack(track.id);
+        });
 
-        top.className =
-            "track-top";
+        top.append(number, colour, name);
 
-        const number =
-            document.createElement("span");
-
-        number.className =
-            "track-number";
-
-        number.textContent =
-            String(index + 1).padStart(2, "0");
-
-        const colour =
-            document.createElement("span");
-
-        colour.className =
-            "track-colour";
-
-        colour.style.background =
-            track.colour;
-
-        colour.title =
-            "Change track colour";
-
-        colour.addEventListener(
-            "click",
-            event => {
-                event.stopPropagation();
-
-                cycleTrackColour(
-                    track.id
-                );
-            }
-        );
-
-        const name =
-            document.createElement("div");
-
-        name.className =
-            "track-name";
-
-        name.innerHTML = `
-            <strong>${escapeHtml(track.name)}</strong>
-            <span>${escapeHtml(track.instrument)}</span>
-        `;
-
-        name.addEventListener(
-            "dblclick",
-            event => {
-                event.stopPropagation();
-
-                renameTrack(
-                    track.id
-                );
-            }
-        );
-
-        top.appendChild(number);
-        top.appendChild(colour);
-        top.appendChild(name);
-
-        const volume =
-            document.createElement("input");
-
+        const volume = document.createElement("input");
         volume.type = "range";
         volume.className = "track-volume";
         volume.min = "0";
         volume.max = "1";
         volume.step = "0.01";
         volume.value = track.volume;
+        volume.addEventListener("click", event => event.stopPropagation());
+        volume.addEventListener("input", event => updateTrackVolume(track.id, event.target.value));
 
-        volume.addEventListener(
-            "click",
-            event => {
+        const actions = document.createElement("div");
+        actions.className = "track-actions";
+
+        [
+            ["Rename", () => renameTrack(track.id)],
+            [track.muted ? "Unmute" : "Mute", () => toggleTrackMute(track.id)],
+            [track.solo ? "Unsolo" : "Solo", () => toggleTrackSolo(track.id)]
+        ].forEach(([label, action]) => {
+            const button = document.createElement("button");
+            button.textContent = label;
+            button.addEventListener("click", event => {
                 event.stopPropagation();
-            }
-        );
+                action();
+            });
+            actions.appendChild(button);
+        });
 
-        volume.addEventListener(
-            "input",
-            event => {
-                updateTrackVolume(
-                    track.id,
-                    event.target.value
-                );
-            }
-        );
+        const remove = document.createElement("button");
+        remove.textContent = "Delete";
+        remove.className = "delete-track";
+        remove.addEventListener("click", event => {
+            event.stopPropagation();
+            deleteTrack(track.id);
+        });
+        actions.appendChild(remove);
 
-        const actions =
-            document.createElement("div");
-
-        actions.className =
-            "track-actions";
-
-        const rename =
-            document.createElement("button");
-
-        rename.textContent =
-            "Rename";
-
-        rename.addEventListener(
-            "click",
-            event => {
-                event.stopPropagation();
-
-                renameTrack(
-                    track.id
-                );
-            }
-        );
-
-        const mute =
-            document.createElement("button");
-
-        mute.textContent =
-            track.muted
-                ? "Unmute"
-                : "Mute";
-
-        mute.addEventListener(
-            "click",
-            event => {
-                event.stopPropagation();
-
-                toggleTrackMute(
-                    track.id
-                );
-            }
-        );
-
-        const solo =
-            document.createElement("button");
-
-        solo.textContent =
-            track.solo
-                ? "Unsolo"
-                : "Solo";
-
-        solo.addEventListener(
-            "click",
-            event => {
-                event.stopPropagation();
-
-                toggleTrackSolo(
-                    track.id
-                );
-            }
-        );
-
-        const deleteButton =
-            document.createElement("button");
-
-        deleteButton.textContent =
-            "Delete";
-
-        deleteButton.className =
-            "delete-track";
-
-        deleteButton.addEventListener(
-            "click",
-            event => {
-                event.stopPropagation();
-
-                deleteTrack(
-                    track.id
-                );
-            }
-        );
-
-        actions.appendChild(rename);
-        actions.appendChild(mute);
-        actions.appendChild(solo);
-        actions.appendChild(deleteButton);
-
-        item.appendChild(top);
-        item.appendChild(volume);
-        item.appendChild(actions);
-
+        item.append(top, volume, actions);
         trackList.appendChild(item);
     });
 
-    const selected =
-        getTrack(selectedTrackId);
-
+    const selected = getTrack(selectedTrackId);
     if (selected && selectedTrackDisplay) {
-        selectedTrackDisplay.textContent =
-            `${selected.name} selected`;
+        selectedTrackDisplay.textContent = `${selected.name} selected`;
     }
 }
 
 function renderArrangement() {
-    if (!arrangementTracks) {
-        return;
-    }
-
+    if (!arrangementTracks) return;
     arrangementTracks.innerHTML = "";
 
     tracks.forEach(track => {
-        const row =
-            document.createElement("div");
+        const row = document.createElement("div");
+        row.className = "arrangement-row";
 
-        row.className =
-            "arrangement-row";
+        const name = document.createElement("div");
+        name.className = "arrangement-track-name";
+        name.innerHTML = `<span class="track-colour" style="background:${track.colour}"></span><span>${escapeHtml(track.name)}</span>`;
 
-        const name =
-            document.createElement("div");
+        const lane = document.createElement("div");
+        lane.className = "arrangement-lane";
+        if (track.id === selectedTrackId) lane.classList.add("selected");
+        lane.addEventListener("click", () => selectTrack(track.id));
 
-        name.className =
-            "arrangement-track-name";
+        const notes = recording
+            .filter(item => (item.trackId || "piano") === track.id)
+            .sort((a, b) => a.time - b.time);
 
-        name.innerHTML = `
-            <span
-                class="track-colour"
-                style="background:${track.colour}"
-            ></span>
-            <span>${escapeHtml(track.name)}</span>
-        `;
+        if (notes.length) {
+            const first = notes[0].time;
+            const last = notes[notes.length - 1].time;
+            const duration = Math.max(1000, last - first + 1000);
+            const timeline = Math.max(duration, 16000);
 
-        const lane =
-            document.createElement("div");
-
-        lane.className =
-            "arrangement-lane";
-
-        if (track.id === selectedTrackId) {
-            lane.classList.add("selected");
-        }
-
-        lane.addEventListener(
-            "click",
-            () => selectTrack(track.id)
-        );
-
-        const trackRecording =
-            recording.filter(
-                item =>
-                    (item.trackId || "piano") === track.id
-            );
-
-        if (trackRecording.length > 0) {
-            const lastNote =
-                trackRecording[
-                    trackRecording.length - 1
-                ];
-
-            const firstNote =
-                trackRecording[0];
-
-            const duration =
-                Math.max(
-                    1000,
-                    lastNote.time - firstNote.time + 1000
-                );
-
-            const totalTimeline =
-                Math.max(
-                    duration,
-                    16000
-                );
-
-            const left =
-                (firstNote.time / totalTimeline) * 100;
-
-            const width =
-                Math.max(
-                    4,
-                    (duration / totalTimeline) * 100
-                );
-
-            const clip =
-                document.createElement("div");
-
-            clip.className =
-                "clip recording-clip";
-
-            clip.style.left =
-                `${Math.min(left, 95)}%`;
-
-            clip.style.width =
-                `${Math.min(width, 100 - left)}%`;
-
-            clip.style.background =
-                track.colour;
-
-            clip.textContent =
-                `${track.name} Recording`;
-
+            const clip = document.createElement("div");
+            clip.className = "clip recording-clip";
+            clip.style.left = `${Math.min((first / timeline) * 100, 95)}%`;
+            clip.style.width = `${Math.min((duration / timeline) * 100, 100)}%`;
+            clip.style.background = track.colour;
+            clip.textContent = `${track.name} Recording`;
             lane.appendChild(clip);
         }
 
         if (track.id === "drums") {
-            const pattern =
-                getDrumPattern();
+            const pattern = getDrumPattern();
+            const count = pattern.kick.length + pattern.snare.length + pattern.hihat.length;
 
-            const activeCount =
-                pattern.kick.length +
-                pattern.snare.length +
-                pattern.hihat.length;
-
-            if (activeCount > 0) {
-                const clip =
-                    document.createElement("div");
-
-                clip.className =
-                    "clip";
-
-                clip.style.left =
-                    "0%";
-
-                clip.style.width =
-                    "100%";
-
-                clip.style.background =
-                    track.colour;
-
-                clip.textContent =
-                    `${activeCount} drum steps`;
-
+            if (count) {
+                const clip = document.createElement("div");
+                clip.className = "clip";
+                clip.style.left = "0%";
+                clip.style.width = "100%";
+                clip.style.background = track.colour;
+                clip.textContent = `${count} drum steps`;
                 lane.appendChild(clip);
             }
         }
 
-        row.appendChild(name);
-        row.appendChild(lane);
-
+        row.append(name, lane);
         arrangementTracks.appendChild(row);
     });
 }
@@ -2281,10 +1374,8 @@ function escapeHtml(value) {
 
 function getSaveData() {
     return {
-        version: "1.8",
-        projectName:
-            projectNameInput?.value ||
-            "Untitled Groove",
+        version: "1.9",
+        projectName: projectNameInput?.value || "Untitled Groove",
         bpm,
         octave,
         masterVolume,
@@ -2302,255 +1393,153 @@ function getSaveData() {
 }
 
 function markUnsaved() {
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Unsaved changes";
-    }
+    if (saveStatus) saveStatus.textContent = "Unsaved changes";
 }
 
 function saveProject() {
-    const data =
-        getSaveData();
-
-    localStorage.setItem(
-        "grooveProject",
-        JSON.stringify(data)
-    );
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Project saved";
-    }
+    localStorage.setItem("grooveProject", JSON.stringify(getSaveData()));
+    if (saveStatus) saveStatus.textContent = "Project saved";
 }
 
 function loadProject() {
-    const saved =
-        localStorage.getItem(
-            "grooveProject"
-        );
+    const saved = localStorage.getItem("grooveProject");
 
     if (!saved) {
-        if (saveStatus) {
-            saveStatus.textContent =
-                "No saved project";
-        }
-
+        if (saveStatus) saveStatus.textContent = "No saved project";
         return;
     }
 
     try {
-        const data =
-            JSON.parse(saved);
+        const data = JSON.parse(saved);
 
-        if (data.projectName && projectNameInput) {
-            projectNameInput.value =
-                data.projectName;
-        }
-
-        if (data.bpm !== undefined) {
-            updateBpm(data.bpm);
-        }
+        if (data.projectName && projectNameInput) projectNameInput.value = data.projectName;
+        if (data.bpm !== undefined) updateBpm(data.bpm);
 
         if (data.octave !== undefined) {
-            octave = Math.max(
-                2,
-                Math.min(
-                    5,
-                    Number(data.octave)
-                )
-            );
-
+            octave = Math.max(2, Math.min(5, Number(data.octave)));
             renderPiano();
         }
 
         if (data.masterVolume !== undefined) {
-            masterVolume =
-                Number(data.masterVolume);
-
-            if (masterVolumeSlider) {
-                masterVolumeSlider.value =
-                    masterVolume;
-            }
-
-            if (volumeSlider) {
-                volumeSlider.value =
-                    masterVolume;
-            }
-
+            masterVolume = Number(data.masterVolume);
+            if (masterVolumeSlider) masterVolumeSlider.value = masterVolume;
+            if (volumeSlider) volumeSlider.value = masterVolume;
             updateVolume();
         }
 
         if (data.masterMuted !== undefined) {
-            masterMuted =
-                Boolean(data.masterMuted);
-
+            masterMuted = Boolean(data.masterMuted);
             updateMasterMuteButton();
         }
 
         if (data.drumVolume !== undefined) {
-            drumVolume =
-                Number(data.drumVolume);
-
-            if (drumVolumeSlider) {
-                drumVolumeSlider.value =
-                    drumVolume;
-            }
-
+            drumVolume = Number(data.drumVolume);
+            if (drumVolumeSlider) drumVolumeSlider.value = drumVolume;
             updateDrumVolume();
         }
 
         if (data.waveform !== undefined) {
-            waveform =
-                data.waveform;
-
-            if (waveformSelect) {
-                waveformSelect.value =
-                    waveform;
-            }
+            waveform = data.waveform;
+            if (waveformSelect) waveformSelect.value = waveform;
         }
 
         if (data.sustain !== undefined) {
-            sustain =
-                Number(data.sustain);
-
-            if (sustainSlider) {
-                sustainSlider.value =
-                    sustain;
-            }
-
+            sustain = Number(data.sustain);
+            if (sustainSlider) sustainSlider.value = sustain;
             updateSustain();
         }
 
         if (data.swing !== undefined) {
-            swing =
-                Number(data.swing);
-
-            if (swingSlider) {
-                swingSlider.value =
-                    swing * 100;
-            }
-
+            swing = Number(data.swing);
+            if (swingSlider) swingSlider.value = swing * 100;
             updateSwing();
         }
 
         if (data.chordMode !== undefined) {
-            chordMode =
-                data.chordMode;
-
-            if (chordModeSelect) {
-                chordModeSelect.value =
-                    chordMode;
-            }
+            chordMode = data.chordMode;
+            if (chordModeSelect) chordModeSelect.value = chordMode;
         }
 
-        recording =
-            Array.isArray(data.recording)
-                ? data.recording
-                : [];
+        recording = Array.isArray(data.recording) ? data.recording : [];
 
-        if (
-            Array.isArray(data.tracks) &&
-            data.tracks.length > 0
-        ) {
-            tracks =
-                data.tracks;
+        if (Array.isArray(data.tracks) && data.tracks.length) {
+            tracks = data.tracks.map(track => ({
+                volume: 1,
+                muted: false,
+                solo: false,
+                colour: trackColours[0],
+                ...track
+            }));
         }
 
-        if (
-            data.selectedTrackId &&
-            getTrack(data.selectedTrackId)
-        ) {
-            selectedTrackId =
-                data.selectedTrackId;
+        if (data.selectedTrackId && getTrack(data.selectedTrackId)) {
+            selectedTrackId = data.selectedTrackId;
         }
 
-        if (data.drumPattern) {
-            setDrumPattern(
-                data.drumPattern
-            );
-        }
+        if (data.drumPattern) setDrumPattern(data.drumPattern);
 
+        updateInstrumentSelector();
         renderTracks();
         renderArrangement();
         updateRecordingDisplay();
 
-        if (saveStatus) {
-            saveStatus.textContent =
-                "Project loaded";
-        }
+        if (saveStatus) saveStatus.textContent = "Project loaded";
     } catch (error) {
         console.error(error);
-
-        if (saveStatus) {
-            saveStatus.textContent =
-                "Could not load project";
-        }
+        if (saveStatus) saveStatus.textContent = "Could not load project";
     }
 }
 
 function deleteSavedProject() {
-    localStorage.removeItem(
-        "grooveProject"
-    );
-
-    if (saveStatus) {
-        saveStatus.textContent =
-            "Saved project deleted";
-    }
+    localStorage.removeItem("grooveProject");
+    if (saveStatus) saveStatus.textContent = "Saved project deleted";
 }
 
 function updateMasterMuteButton() {
-    if (!masterMuteButton) {
-        return;
-    }
+    if (!masterMuteButton) return;
 
-    masterMuteButton.textContent =
-        masterMuted
-            ? "Master Muted"
-            : "Master Mute";
-
-    masterMuteButton.classList.toggle(
-        "active",
-        masterMuted
-    );
+    masterMuteButton.textContent = masterMuted ? "Master Muted" : "Master Mute";
+    masterMuteButton.classList.toggle("active", masterMuted);
 }
 
 function toggleMasterMute() {
-    masterMuted =
-        !masterMuted;
-
+    masterMuted = !masterMuted;
     updateMasterMuteButton();
+    markUnsaved();
+}
+
+function updateInstrumentSelector() {
+    const track = getTrack(selectedTrackId);
+    if (!track || !instrumentSelect) return;
+
+    if (!instrumentSettings[track.instrument]) track.instrument = "Piano";
+    instrumentSelect.value = track.instrument;
+
+    if (synthControls) synthControls.hidden = track.instrument !== "Synth";
+
+    renderTracks();
+    renderArrangement();
+}
+
+function changeSelectedTrackInstrument(instrument) {
+    const track = getTrack(selectedTrackId);
+    if (!track || !instrumentSettings[instrument]) return;
+
+    track.instrument = instrument;
+    updateInstrumentSelector();
     markUnsaved();
 }
 
 function handleKeyboardDown(event) {
     const key = event.key.toLowerCase();
+    if (event.repeat) return;
 
-    if (event.repeat) {
-        return;
-    }
-
-    const activeElement = document.activeElement;
-
-    if (
-        activeElement &&
-        (
-            activeElement.tagName === "INPUT" ||
-            activeElement.tagName === "TEXTAREA"
-        )
-    ) {
-        return;
-    }
+    const active = document.activeElement;
+    if (active && ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName)) return;
 
     if (key === " ") {
         event.preventDefault();
-
-        if (isPlaying) {
-            stopRecordingPlayback();
-        } else {
-            playRecording();
-        }
-
+        isPlaying ? stopRecordingPlayback() : playRecording();
         return;
     }
 
@@ -2560,11 +1549,7 @@ function handleKeyboardDown(event) {
     }
 
     if (key === "m") {
-        if (isMetronomeOn) {
-            stopMetronome();
-        } else {
-            startMetronome();
-        }
+        isMetronomeOn ? stopMetronome() : startMetronome();
         return;
     }
 
@@ -2579,365 +1564,158 @@ function handleKeyboardDown(event) {
     }
 
     const note = getRootNoteFromKeyboardKey(key);
+    if (!note) return;
 
-    if (!note) {
-        return;
-    }
-
-    const pianoKey = findPianoKey(note);
-
-    if (!pianoKey) {
-        return;
-    }
+    const keyElement = findPianoKey(note);
+    if (!keyElement) return;
 
     event.preventDefault();
-
-    playPianoKey(note, pianoKey);
-
-    pianoKey.dataset.keyboardPressed = "true";
+    playPianoKey(note, keyElement);
 }
 
 function handleKeyboardUp(event) {
-    const key =
-        event.key.toLowerCase();
+    const note = getRootNoteFromKeyboardKey(event.key.toLowerCase());
+    if (!note) return;
 
-    const note =
-        getRootNoteFromKeyboardKey(key);
-
-    if (!note) {
-        return;
-    }
-
-    const pianoKey =
-        findPianoKey(note);
-
-    if (!pianoKey) {
-        return;
-    }
-
-    releasePianoKey(
-        note,
-        pianoKey
-    );
-
-    delete pianoKey.dataset.keyboardPressed;
+    const keyElement = findPianoKey(note);
+    if (keyElement) releasePianoKey(note, keyElement);
 }
 
-document.addEventListener(
-    "keydown",
-    handleKeyboardDown
-);
+document.addEventListener("keydown", handleKeyboardDown);
+document.addEventListener("keyup", handleKeyboardUp);
 
-document.addEventListener(
-    "keyup",
-    handleKeyboardUp
-);
-
-if (volumeSlider) {
-    volumeSlider.addEventListener(
-        "input",
-        () => {
-            masterVolume =
-                Number(volumeSlider.value);
-
-            updateVolume();
-
-            if (masterVolumeSlider) {
-                masterVolumeSlider.value =
-                    masterVolume;
-            }
-
-            markUnsaved();
-        }
-    );
-}
-
-if (masterVolumeSlider) {
-    masterVolumeSlider.addEventListener(
-        "input",
-        () => {
-            masterVolume =
-                Number(masterVolumeSlider.value);
-
-            updateMasterVolumeDisplay();
-
-            if (volumeSlider) {
-                volumeSlider.value =
-                    masterVolume;
-            }
-
-            updateVolume();
-            markUnsaved();
-        }
-    );
-}
-
-if (masterMuteButton) {
-    masterMuteButton.addEventListener(
-        "click",
-        toggleMasterMute
-    );
-}
-
-if (waveformSelect) {
-    waveformSelect.addEventListener(
-        "change",
-        () => {
-            updateWaveform();
-            markUnsaved();
-        }
-    );
-}
-
-if (sustainSlider) {
-    sustainSlider.addEventListener(
-        "input",
-        () => {
-            updateSustain();
-            markUnsaved();
-        }
-    );
-}
-
-if (chordModeSelect) {
-    chordModeSelect.addEventListener(
-        "change",
-        () => {
-            updateChordMode();
-            markUnsaved();
-        }
-    );
-}
-
-if (octaveDown) {
-    octaveDown.addEventListener(
-        "click",
-        () => {
-            changeOctave(-1);
-            markUnsaved();
-        }
-    );
-}
-
-if (octaveUp) {
-    octaveUp.addEventListener(
-        "click",
-        () => {
-            changeOctave(1);
-            markUnsaved();
-        }
-    );
-}
-
-if (recordButton) {
-    recordButton.addEventListener(
-        "click",
-        toggleRecording
-    );
-}
-
-if (clearButton) {
-    clearButton.addEventListener(
-        "click",
-        clearRecording
-    );
-}
-
-if (playButton) {
-    playButton.addEventListener(
-        "click",
-        () => {
-            if (isPlaying) {
-                stopRecordingPlayback();
-            } else {
-                playRecording();
-            }
-        }
-    );
-}
-
-if (playRecordingButton) {
-    playRecordingButton.addEventListener(
-        "click",
-        () => {
-            if (isPlaying) {
-                stopRecordingPlayback();
-            } else {
-                playRecording();
-            }
-        }
-    );
-}
-
-if (stopRecordingButton) {
-    stopRecordingButton.addEventListener(
-        "click",
-        stopRecordingPlayback
-    );
-}
-
-if (bpmInput) {
-    bpmInput.addEventListener(
-        "change",
-        () => {
-            updateBpm(
-                bpmInput.value
-            );
-
-            markUnsaved();
-        }
-    );
-}
-
-if (bpmDown) {
-    bpmDown.addEventListener(
-        "click",
-        () => {
-            updateBpm(
-                bpm - 5
-            );
-
-            markUnsaved();
-        }
-    );
-}
-
-if (bpmUp) {
-    bpmUp.addEventListener(
-        "click",
-        () => {
-            updateBpm(
-                bpm + 5
-            );
-
-            markUnsaved();
-        }
-    );
-}
-
-if (drumPlayButton) {
-    drumPlayButton.addEventListener(
-        "click",
-        startDrums
-    );
-}
-
-if (drumStopButton) {
-    drumStopButton.addEventListener(
-        "click",
-        stopDrums
-    );
-}
-
-if (drumClearButton) {
-    drumClearButton.addEventListener(
-        "click",
-        () => {
-            clearDrums();
-            renderArrangement();
-            markUnsaved();
-        }
-    );
-}
-
-if (drumVolumeSlider) {
-    drumVolumeSlider.addEventListener(
-        "input",
-        () => {
-            updateDrumVolume();
-            markUnsaved();
-        }
-    );
-}
-
-if (swingSlider) {
-    swingSlider.addEventListener(
-        "input",
-        () => {
-            updateSwing();
-            markUnsaved();
-        }
-    );
-}
-
-drumRows.forEach(row => {
-    row.querySelectorAll(".step").forEach(
-        step => {
-            step.addEventListener(
-                "click",
-                () => {
-                    toggleDrumStep(step);
-
-                    playDrumSound(
-                        step.dataset.instrument
-                    );
-
-                    renderArrangement();
-                    markUnsaved();
-                }
-            );
-        }
-    );
+volumeSlider?.addEventListener("input", () => {
+    masterVolume = Number(volumeSlider.value);
+    if (masterVolumeSlider) masterVolumeSlider.value = masterVolume;
+    updateVolume();
+    markUnsaved();
 });
 
-if (metronomeButton) {
-    metronomeButton.addEventListener(
-        "click",
-        () => {
-            if (isMetronomeOn) {
-                stopMetronome();
-            } else {
-                startMetronome();
-            }
-        }
-    );
-}
+masterVolumeSlider?.addEventListener("input", () => {
+    masterVolume = Number(masterVolumeSlider.value);
+    if (volumeSlider) volumeSlider.value = masterVolume;
+    updateVolume();
+    markUnsaved();
+});
 
-if (tapTempoButton) {
-    tapTempoButton.addEventListener(
-        "click",
-        tapTempo
-    );
-}
+masterMuteButton?.addEventListener("click", toggleMasterMute);
 
-if (saveButton) {
-    saveButton.addEventListener(
-        "click",
-        saveProject
-    );
-}
+waveformSelect?.addEventListener("change", () => {
+    updateWaveform();
+    waveformSelect.blur();
+    markUnsaved();
+});
 
-if (loadButton) {
-    loadButton.addEventListener(
-        "click",
-        loadProject
-    );
-}
+sustainSlider?.addEventListener("input", () => {
+    updateSustain();
+    markUnsaved();
+});
 
-if (deleteSaveButton) {
-    deleteSaveButton.addEventListener(
-        "click",
-        deleteSavedProject
-    );
-}
+chordModeSelect?.addEventListener("change", () => {
+    updateChordMode();
+    markUnsaved();
+});
 
-if (addTrackButton) {
-    addTrackButton.addEventListener(
-        "click",
-        createTrack
-    );
-}
+octaveDown?.addEventListener("click", () => {
+    changeOctave(-1);
+    markUnsaved();
+});
 
-if (projectNameInput) {
-    projectNameInput.addEventListener(
-        "input",
-        markUnsaved
-    );
+octaveUp?.addEventListener("click", () => {
+    changeOctave(1);
+    markUnsaved();
+});
+
+recordButton?.addEventListener("click", toggleRecording);
+clearButton?.addEventListener("click", clearRecording);
+
+playButton?.addEventListener("click", () => {
+    isPlaying ? stopRecordingPlayback() : playRecording();
+});
+
+playRecordingButton?.addEventListener("click", () => {
+    isPlaying ? stopRecordingPlayback() : playRecording();
+});
+
+stopRecordingButton?.addEventListener("click", stopRecordingPlayback);
+
+bpmInput?.addEventListener("change", () => {
+    updateBpm(bpmInput.value);
+    markUnsaved();
+});
+
+bpmDown?.addEventListener("click", () => {
+    updateBpm(bpm - 5);
+    markUnsaved();
+});
+
+bpmUp?.addEventListener("click", () => {
+    updateBpm(bpm + 5);
+    markUnsaved();
+});
+
+drumPlayButton?.addEventListener("click", startDrums);
+drumStopButton?.addEventListener("click", stopDrums);
+
+drumClearButton?.addEventListener("click", () => {
+    clearDrums();
+    renderArrangement();
+    markUnsaved();
+});
+
+drumVolumeSlider?.addEventListener("input", () => {
+    updateDrumVolume();
+    markUnsaved();
+});
+
+swingSlider?.addEventListener("input", () => {
+    updateSwing();
+    markUnsaved();
+});
+
+drumRows.forEach(row => {
+    row.querySelectorAll(".step").forEach(step => {
+        step.addEventListener("click", () => {
+            toggleDrumStep(step);
+            playDrumSound(step.dataset.instrument);
+            renderArrangement();
+            markUnsaved();
+        });
+    });
+});
+
+metronomeButton?.addEventListener("click", () => {
+    isMetronomeOn ? stopMetronome() : startMetronome();
+});
+
+tapTempoButton?.addEventListener("click", tapTempo);
+saveButton?.addEventListener("click", saveProject);
+loadButton?.addEventListener("click", loadProject);
+deleteSaveButton?.addEventListener("click", deleteSavedProject);
+addTrackButton?.addEventListener("click", createTrack);
+projectNameInput?.addEventListener("input", markUnsaved);
+
+instrumentSelect?.addEventListener("change", () => {
+    changeSelectedTrackInstrument(instrumentSelect.value);
+});
+
+[
+    synthWaveform,
+    synthAttack,
+    synthRelease,
+    synthFilter,
+    synthResonance,
+    synthVolume
+].forEach(control => {
+    control?.addEventListener("input", markUnsaved);
+});
+
+function playOrganTest() {
+    playNote(`C${octave}`, "Organ", 1, selectedTrackId);
 }
 
 renderPiano();
 bindBassEvents();
-
 updateVolume();
 updateSustain();
 updateDrumVolume();
@@ -2945,48 +1723,17 @@ updateSwing();
 updateBpm(bpm);
 updateRecordingDisplay();
 updateMasterMuteButton();
-
 renderTracks();
+updateInstrumentSelector();
 renderArrangement();
 
-window.addEventListener(
-    "beforeunload",
-    () => {
-        stopDrums();
-        stopMetronome();
-        stopRecordingPlayback();
+window.addEventListener("beforeunload", () => {
+    stopDrums();
+    stopMetronome();
+    stopRecordingPlayback();
 
-        activeNotes.forEach(
-            (_, note) => {
-                stopNote(
-                    note,
-                    0.01
-                );
-            }
-        );
-
-        activeBassNotes.forEach(
-            (_, note) => {
-                stopBassNote(note);
-            }
-        );
-    }
-);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    activeInstrumentVoices.forEach((voice, key) => {
+        const split = key.indexOf(":");
+        stopNote(key.slice(split + 1), 0.01, key.slice(0, split));
+    });
+});
