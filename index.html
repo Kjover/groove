@@ -1,818 +1,466 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Groove</title>
-
+    <meta name="theme-color" content="#0f100d">
+    <meta name="description" content="Groove — a browser-based mini music studio.">
+    <title>Groove — Mini Music Studio</title>
     <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 </head>
-
 <body>
+<div class="app-shell">
+    <header class="top-bar">
+        <a class="brand" href="#" aria-label="Groove home">
+            <span class="brand-mark" aria-hidden="true">
+                <img class="brand-image" src="treble.png" alt="">
+            </span>
 
-<header class="top-bar">
+            <span class="brand-copy">
+                <strong>Groove<span class="brand-period">.</span></strong>
+                <small>MINI MUSIC STUDIO</small>
+            </span>
+        </a>
 
-    <div class="brand">
-        <h1>Groove</h1>
-        <p>Mini Music Studio</p>
-    </div>
-
-    <div class="transport">
-
-        <button id="playButton">
-            Play
-        </button>
-
-        <button id="recordButton">
-            Record
-        </button>
-
-        <button id="clearButton">
-            Clear
-        </button>
-
-    </div>
-
-</header>
-
-
-<main>
-        <div class="instrument-selector">
-            <label for="instrumentSelect">Instrument</label>
-            <select id="instrumentSelect">
-                <option value="Piano">Piano</option>
-                <option value="Bass">Bass</option>
-                <option value="Synth">Synth</option>
-                <option value="Organ">Organ</option>
-                <option value="Strings">Strings</option>
-                <option value="Electric Piano">Electric Piano</option>
-            </select>
+        <div class="top-status">
+            <span class="status-indicator"></span>
+            <span>Browser studio</span>
         </div>
 
-        <div id="synthControls" class="synth-controls">
-            <label for="synthWaveform">Waveform</label>
-            <select id="synthWaveform">
-                <option value="sawtooth">Sawtooth</option>
-                <option value="sine">Sine</option>
-                <option value="square">Square</option>
-                <option value="triangle">Triangle</option>
-            </select>
-
-            <label for="synthAttack">Attack</label>
-            <input id="synthAttack" type="range"
-                min="0.01" max="1.5" step="0.01" value="0.05">
-
-            <label for="synthRelease">Release</label>
-            <input id="synthRelease" type="range"
-                min="0.05" max="2" step="0.05" value="0.3">
-
-            <label for="synthFilter">Filter</label>
-            <input id="synthFilter" type="range"
-                min="200" max="12000" step="100" value="6000">
-
-            <label for="synthResonance">Resonance</label>
-            <input id="synthResonance" type="range"
-                min="0.1" max="18" step="0.1" value="1">
-
-            <label for="synthVolume">Synth Volume</label>
-            <input id="synthVolume" type="range"
-                min="0" max="1" step="0.01" value="0.7">
+        <div class="transport">
+            <button id="playButton" class="transport-button play-button" type="button">
+                <span class="button-symbol">▶</span> Play
+            </button>
+            <button id="recordButton" class="transport-button record-button" type="button">
+                <span class="record-symbol"></span> Record
+            </button>
+            <button id="clearButton" class="transport-button danger-button" type="button">
+                Clear
+            </button>
         </div>
-    <section class="studio-layout">
+    </header>
 
-        <aside class="track-sidebar">
+<span class="brand-mark" aria-hidden="true">
+   <img
+    class="brand-mark"
+    src="treble.png"
+    alt=""
+>
+</span>
+        </a>
 
-            <div class="track-sidebar-header">
+        <div class="top-status">
+            <span class="status-indicator"></span>
+            <span>Browser studio</span>
+        </div>
 
-                <div>
-                    <span class="eyebrow">Workspace</span>
-                    <h2>Tracks</h2>
-                </div>
+        <div class="transport">
+            <button id="playButton" class="transport-button play-button" type="button">
+                <span class="button-symbol">▶</span> Play
+            </button>
+            <button id="recordButton" class="transport-button record-button" type="button">
+                <span class="record-symbol"></span> Record
+            </button>
+            <button id="clearButton" class="transport-button danger-button" type="button">
+                Clear
+            </button>
+        </div>
+    </header>
 
-                <button id="addTrackButton" class="add-track-button">
-                    +
-                </button>
-
+    <main class="studio-page">
+        <section class="instrument-bar">
+            <div class="instrument-selector">
+                <label for="instrumentSelect">Selected track instrument</label>
+                <select id="instrumentSelect">
+                    <option value="Piano">Piano</option>
+                    <option value="Bass">Bass</option>
+                    <option value="Synth">Synth</option>
+                    <option value="Organ">Organ</option>
+                    <option value="Strings">Strings</option>
+                    <option value="Electric Piano">Electric Piano</option>
+                </select>
             </div>
+            <span class="instrument-note">Choose a track on the left to change its sound.</span>
+        </section>
 
-            <div id="trackList" class="track-list"></div>
+        <section id="synthControls" class="synth-controls" hidden>
+            <div class="synth-control">
+                <label for="synthWaveform">Waveform</label>
+                <select id="synthWaveform">
+                    <option value="sawtooth">Sawtooth</option>
+                    <option value="sine">Sine</option>
+                    <option value="square">Square</option>
+                    <option value="triangle">Triangle</option>
+                </select>
+            </div>
+            <div class="synth-control">
+                <label for="synthAttack">Attack <span id="synthAttackDisplay">0.05s</span></label>
+                <input id="synthAttack" type="range" min="0.01" max="1.5" step="0.01" value="0.05">
+            </div>
+            <div class="synth-control">
+                <label for="synthRelease">Release <span id="synthReleaseDisplay">0.30s</span></label>
+                <input id="synthRelease" type="range" min="0.05" max="2" step="0.05" value="0.3">
+            </div>
+            <div class="synth-control">
+                <label for="synthFilter">Filter <span id="synthFilterDisplay">6000 Hz</span></label>
+                <input id="synthFilter" type="range" min="200" max="12000" step="100" value="6000">
+            </div>
+            <div class="synth-control">
+                <label for="synthResonance">Resonance <span id="synthResonanceDisplay">1.0</span></label>
+                <input id="synthResonance" type="range" min="0.1" max="18" step="0.1" value="1">
+            </div>
+            <div class="synth-control">
+                <label for="synthVolume">Synth volume <span id="synthVolumeDisplay">70%</span></label>
+                <input id="synthVolume" type="range" min="0" max="1" step="0.01" value="0.7">
+            </div>
+        </section>
 
-        </aside>
+        <div class="studio-layout">
 
-
-        <div class="studio-main">
-
-            <section class="arrangement-section">
-
-                <div class="section-header arrangement-header">
-
+            <aside class="track-sidebar">
+                <div class="track-sidebar-header">
                     <div>
-                        <span class="eyebrow">Arrangement</span>
-                        <h2>Timeline</h2>
+                        <span class="eyebrow">WORKSPACE</span>
+                        <h2>Tracks <span id="trackCount" class="heading-count">3</span></h2>
                     </div>
-
-                    <div class="timeline-info">
-                        <span id="selectedTrackDisplay">
-                            Piano selected
-                        </span>
-
-                        <span id="timelinePosition">
-                            0.0s
-                        </span>
-                    </div>
-
+                    <button id="addTrackButton" class="add-track-button" type="button" aria-label="Add track">+</button>
                 </div>
 
+                <div id="trackList" class="track-list"></div>
 
-                <div class="arrangement">
-
-                    <div class="timeline-ruler">
-
-                        <span>0</span>
-                        <span>1</span>
-                        <span>2</span>
-                        <span>3</span>
-                        <span>4</span>
-                        <span>5</span>
-                        <span>6</span>
-                        <span>7</span>
-                        <span>8</span>
-                        <span>9</span>
-                        <span>10</span>
-                        <span>11</span>
-                        <span>12</span>
-                        <span>13</span>
-                        <span>14</span>
-                        <span>15</span>
-
-                    </div>
-
-
-                    <div id="arrangementTracks" class="arrangement-tracks"></div>
-
+                <div class="sidebar-footer">
+                    <span class="sidebar-footer-mark"></span>
+                    <span>Select a track to play through it. Use Mute and Solo to control your mix.</span>
                 </div>
+            </aside>
 
-            </section>
+            <div class="studio-main">
 
-
-            <!-- PIANO -->
-
-            <section class="piano-section">
-
-                <div class="section-header">
-
-                    <div>
-                        <span class="eyebrow">Instrument</span>
-                        <h2>Piano</h2>
+                <section class="panel arrangement-section">
+                    <div class="section-header arrangement-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">ARRANGEMENT</span>
+                            <h2>Timeline</h2>
+                        </div>
+                        <div class="timeline-info">
+                            <span id="selectedTrackDisplay">Piano selected</span>
+                            <span class="timeline-divider"></span>
+                            <span id="timelinePosition">0.0s</span>
+                        </div>
                     </div>
 
-                    <p>
-                        Play notes using your mouse or computer keyboard.
-                    </p>
-
-                </div>
-
-
-                <div class="piano-controls">
-
-                    <div class="piano-control">
-
-                        <label for="volume">
-                            Volume
-                        </label>
-
-                        <input
-                            type="range"
-                            id="volume"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value="0.35"
-                        >
-
-                        <span id="volumeDisplay">
-                            35%
-                        </span>
-
+                    <div class="arrangement">
+                        <div class="timeline-ruler">
+                            <span>0</span><span>1</span><span>2</span><span>3</span>
+                            <span>4</span><span>5</span><span>6</span><span>7</span>
+                            <span>8</span><span>9</span><span>10</span><span>11</span>
+                            <span>12</span><span>13</span><span>14</span><span>15</span>
+                        </div>
+                        <div id="arrangementTracks" class="arrangement-tracks"></div>
                     </div>
 
+                    <div class="arrangement-legend">
+                        <span><i class="legend-dot legend-green"></i> Recorded notes</span>
+                        <span><i class="legend-dot legend-yellow"></i> Selected track</span>
+                    </div>
+                </section>
 
-                    <div class="piano-control">
-
-                        <label for="waveform">
-                            Sound
-                        </label>
-
-                        <select id="waveform">
-
-                            <option value="sine">
-                                Sine
-                            </option>
-
-                            <option value="triangle">
-                                Triangle
-                            </option>
-
-                            <option value="square">
-                                Square
-                            </option>
-
-                            <option value="sawtooth">
-                                Sawtooth
-                            </option>
-
-                        </select>
-
+                <section class="panel piano-section">
+                    <div class="section-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">INSTRUMENT 01</span>
+                            <h2>Piano keyboard</h2>
+                        </div>
+                        <p>Play with your mouse or computer keyboard. Start on A and move across the white keys.</p>
                     </div>
 
+                    <div class="piano-controls">
+                        <div class="piano-control">
+                            <label for="volume">Volume <span id="volumeDisplay">35%</span></label>
+                            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.35">
+                        </div>
+                        <div class="piano-control">
+                            <label for="waveform">Sound</label>
+                            <select id="waveform">
+                                <option value="sine">Sine</option>
+                                <option value="triangle">Triangle</option>
+                                <option value="square">Square</option>
+                                <option value="sawtooth">Sawtooth</option>
+                            </select>
+                        </div>
+                        <div class="piano-control">
+                            <label>Octave</label>
+                            <div class="inline-control">
+                                <button id="octaveDown" type="button" aria-label="Lower octave">−</button>
+                                <span id="octaveDisplay">4</span>
+                                <button id="octaveUp" type="button" aria-label="Raise octave">+</button>
+                            </div>
+                        </div>
+                        <div class="piano-control">
+                            <label for="sustain">Sustain <span id="sustainDisplay">0.7s</span></label>
+                            <input type="range" id="sustain" min="0.1" max="2" step="0.1" value="0.7">
+                        </div>
+                        <div class="piano-control">
+                            <label for="chordMode">Chords</label>
+                            <select id="chordMode">
+                                <option value="off">Off</option>
+                                <option value="major">Major</option>
+                                <option value="minor">Minor</option>
+                                <option value="7th">7th</option>
+                            </select>
+                        </div>
+                    </div>
 
-                    <div class="piano-control">
+                    <div class="note-display">
+                        <span class="note-display-label"><span class="live-indicator"></span> PLAYING</span>
+                        <strong id="currentNote">—</strong>
+                    </div>
 
-                        <label>
-                            Octave
-                        </label>
+                    <div class="piano" aria-label="Piano keyboard"></div>
 
-                        <div class="inline-control">
+                    <div class="keyboard-help">
+                        <span class="keyboard-help-title">KEYBOARD SHORTCUTS</span>
+                        <div class="keyboard-keys">
+                            <strong>A</strong><strong>S</strong><strong>D</strong><strong>F</strong>
+                            <strong>G</strong><strong>H</strong><strong>J</strong><strong>K</strong>
+                        </div>
+                        <p>W E T Y U = black keys <span class="help-separator">/</span> Z X = octave down/up</p>
+                    </div>
 
-                            <button id="octaveDown">
-                                −
-                            </button>
-
-                            <span id="octaveDisplay">
-                                4
-                            </span>
-
-                            <button id="octaveUp">
-                                +
-                            </button>
-
+                    <div class="recording-panel">
+                        <div class="recording-header">
+                            <div>
+                                <span class="eyebrow">RECORDING MONITOR</span>
+                                <strong id="recordingStatus">Ready</strong>
+                            </div>
+                            <span class="recording-indicator"><span class="recording-dot"></span> REC STATUS</span>
                         </div>
 
+                        <div class="recording-stats">
+                            <div class="recording-stat">
+                                <span>NOTES RECORDED</span>
+                                <strong id="recordingNoteCount">0</strong>
+                            </div>
+                            <div class="recording-stat">
+                                <span>RECORDING LENGTH</span>
+                                <strong id="recordingDuration">0.0s</strong>
+                            </div>
+                        </div>
+
+                        <div id="recordingDisplay" class="recording-display">No notes recorded yet.</div>
+
+                        <div class="recording-controls">
+                            <button id="playRecordingButton" type="button">Play Recording</button>
+                            <button id="stopRecordingButton" type="button">Stop Playback</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel bass-section">
+                    <div class="section-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">INSTRUMENT 02</span>
+                            <h2>Bass keyboard</h2>
+                        </div>
+                        <p>Use the low notes to add a foundation to your idea.</p>
                     </div>
 
+                    <div class="bass-display">
+                        <span>PLAYING</span>
+                        <strong id="currentBassNote">—</strong>
+                    </div>
 
-                    <div class="piano-control">
+                    <div class="bass-keyboard">
+                        <button class="bass-key" type="button" data-note="C2"><span>C</span><small>C2</small></button>
+                        <button class="bass-key" type="button" data-note="D2"><span>D</span><small>D2</small></button>
+                        <button class="bass-key" type="button" data-note="E2"><span>E</span><small>E2</small></button>
+                        <button class="bass-key" type="button" data-note="F2"><span>F</span><small>F2</small></button>
+                        <button class="bass-key" type="button" data-note="G2"><span>G</span><small>G2</small></button>
+                        <button class="bass-key" type="button" data-note="A2"><span>A</span><small>A2</small></button>
+                        <button class="bass-key" type="button" data-note="B2"><span>B</span><small>B2</small></button>
+                        <button class="bass-key" type="button" data-note="C3"><span>C</span><small>C3</small></button>
+                    </div>
+                </section>
 
-                        <label for="sustain">
-                            Sustain
+                <section id="drums" class="panel">
+                    <div class="section-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">INSTRUMENT 03</span>
+                            <h2>Drum machine</h2>
+                        </div>
+                        <p>Click the steps to build a 16-step rhythm. Turn on Play to hear the pattern loop.</p>
+                    </div>
+
+                    <div class="drum-controls">
+                        <div class="drum-transport">
+                            <button id="drumPlayButton" class="button-primary" type="button">Play</button>
+                            <button id="drumStopButton" type="button">Stop</button>
+                            <button id="drumClearButton" class="danger-button" type="button">Clear</button>
+                        </div>
+                        <div class="drum-volume">
+                            <label for="drumVolume">Drum volume <span id="drumVolumeDisplay">35%</span></label>
+                            <input type="range" id="drumVolume" min="0" max="1" step="0.01" value="0.35">
+                        </div>
+                    </div>
+
+                    <div class="drum-machine">
+                        <div class="step-number-row">
+                            <span class="drum-name-heading">SOUND</span>
+                            <span>1</span><span>2</span><span>3</span><span>4</span>
+                            <span>5</span><span>6</span><span>7</span><span>8</span>
+                            <span>9</span><span>10</span><span>11</span><span>12</span>
+                            <span>13</span><span>14</span><span>15</span><span>16</span>
+                        </div>
+
+                        <div class="drum-row">
+                            <span class="drum-name">Kick</span>
+                            <div class="steps">
+                                <button class="step" type="button" data-instrument="kick" data-step="1" aria-label="Kick step 1"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="2" aria-label="Kick step 2"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="3" aria-label="Kick step 3"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="4" aria-label="Kick step 4"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="5" aria-label="Kick step 5"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="6" aria-label="Kick step 6"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="7" aria-label="Kick step 7"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="8" aria-label="Kick step 8"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="9" aria-label="Kick step 9"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="10" aria-label="Kick step 10"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="11" aria-label="Kick step 11"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="12" aria-label="Kick step 12"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="13" aria-label="Kick step 13"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="14" aria-label="Kick step 14"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="15" aria-label="Kick step 15"></button>
+                                <button class="step" type="button" data-instrument="kick" data-step="16" aria-label="Kick step 16"></button>
+                            </div>
+                        </div>
+
+                        <div class="drum-row">
+                            <span class="drum-name">Snare</span>
+                            <div class="steps">
+                                <button class="step" type="button" data-instrument="snare" data-step="1" aria-label="Snare step 1"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="2" aria-label="Snare step 2"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="3" aria-label="Snare step 3"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="4" aria-label="Snare step 4"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="5" aria-label="Snare step 5"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="6" aria-label="Snare step 6"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="7" aria-label="Snare step 7"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="8" aria-label="Snare step 8"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="9" aria-label="Snare step 9"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="10" aria-label="Snare step 10"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="11" aria-label="Snare step 11"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="12" aria-label="Snare step 12"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="13" aria-label="Snare step 13"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="14" aria-label="Snare step 14"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="15" aria-label="Snare step 15"></button>
+                                <button class="step" type="button" data-instrument="snare" data-step="16" aria-label="Snare step 16"></button>
+                            </div>
+                        </div>
+
+                        <div class="drum-row">
+                            <span class="drum-name">Hi-hat</span>
+                            <div class="steps">
+                                <button class="step" type="button" data-instrument="hihat" data-step="1" aria-label="Hi-hat step 1"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="2" aria-label="Hi-hat step 2"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="3" aria-label="Hi-hat step 3"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="4" aria-label="Hi-hat step 4"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="5" aria-label="Hi-hat step 5"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="6" aria-label="Hi-hat step 6"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="7" aria-label="Hi-hat step 7"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="8" aria-label="Hi-hat step 8"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="9" aria-label="Hi-hat step 9"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="10" aria-label="Hi-hat step 10"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="11" aria-label="Hi-hat step 11"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="12" aria-label="Hi-hat step 12"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="13" aria-label="Hi-hat step 13"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="14" aria-label="Hi-hat step 14"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="15" aria-label="Hi-hat step 15"></button>
+                                <button class="step" type="button" data-instrument="hihat" data-step="16" aria-label="Hi-hat step 16"></button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="drum-hint">Tip: start with Kick on 1, 5, 9 and 13, then add Snare and Hi-hat.</p>
+                </section>
+
+                <section id="controls" class="panel">
+                    <div class="section-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">STUDIO</span>
+                            <h2>Tempo and controls</h2>
+                        </div>
+                        <p>Adjust the rhythm and overall output.</p>
+                    </div>
+
+                    <div class="control-panel">
+                        <div class="beat-display">
+                            <span class="control-label">BEAT</span>
+                            <div class="beat-indicators">
+                                <span class="beat active"></span>
+                                <span class="beat"></span>
+                                <span class="beat"></span>
+                                <span class="beat"></span>
+                            </div>
+                        </div>
+
+                        <div class="tempo-control">
+                            <label for="bpm">Tempo</label>
+                            <div class="tempo-buttons">
+                                <button id="bpmDown" type="button" aria-label="Decrease tempo">−</button>
+                                <input type="number" id="bpm" value="120" min="40" max="240" step="1">
+                                <button id="bpmUp" type="button" aria-label="Increase tempo">+</button>
+                            </div>
+                            <span id="bpmDisplay">120 BPM</span>
+                        </div>
+
+                        <div class="swing-control">
+                            <label for="swing">Swing <span id="swingDisplay">0%</span></label>
+                            <input type="range" id="swing" min="0" max="45" step="1" value="0">
+                        </div>
+
+                        <button id="metronomeButton" class="utility-button" type="button">Metronome: Off</button>
+                        <button id="tapTempoButton" class="utility-button" type="button">Tap Tempo</button>
+
+                        <div class="master-control">
+                            <label for="masterVolume">Master volume <span id="masterVolumeDisplay">35%</span></label>
+                            <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.35">
+                        </div>
+
+                        <button id="masterMuteButton" class="toggle-button" type="button">Master Mute</button>
+                        <p id="tapTempoDisplay">0 taps</p>
+                    </div>
+                </section>
+
+                <section class="panel project-section">
+                    <div class="section-header">
+                        <div class="section-heading">
+                            <span class="eyebrow">PROJECT</span>
+                            <h2>Save your work</h2>
+                        </div>
+                        <p id="saveStatus" role="status" aria-live="polite">Unsaved changes</p>
+                    </div>
+
+                    <div class="project-controls">
+                        <label class="project-name-field" for="projectName">
+                            Project name
+                            <input id="projectName" type="text" maxlength="80" placeholder="Project name" value="Untitled Groove">
                         </label>
-
-                        <input
-                            type="range"
-                            id="sustain"
-                            min="0.1"
-                            max="2"
-                            step="0.1"
-                            value="0.7"
-                        >
-
-                        <span id="sustainDisplay">
-                            0.7s
-                        </span>
-
-                    </div>
-
-
-                    <div class="piano-control">
-
-                        <label for="chordMode">
-                            Chords
-                        </label>
-
-                        <select id="chordMode">
-
-                            <option value="off">
-                                Off
-                            </option>
-
-                            <option value="major">
-                                Major
-                            </option>
-
-                            <option value="minor">
-                                Minor
-                            </option>
-
-                            <option value="7th">
-                                7th
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                </div>
-
-
-                <div class="note-display">
-
-                    <span>Playing</span>
-
-                    <strong id="currentNote">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="piano"></div>
-
-
-                <div class="keyboard-help">
-
-                    <span>Keyboard</span>
-
-                    <div class="keyboard-keys">
-
-                        <strong>A</strong>
-                        <strong>S</strong>
-                        <strong>D</strong>
-                        <strong>F</strong>
-                        <strong>G</strong>
-                        <strong>H</strong>
-                        <strong>J</strong>
-                        <strong>K</strong>
-
-                    </div>
-
-                    <p>
-                        W E T Y U = black keys | Z X = octave down/up
-                    </p>
-
-                </div>
-
-
-                <div class="recording-panel">
-
-                    <div class="recording-header">
-
-                        <div>
-                            <span class="eyebrow">
-                                Recording
-                            </span>
-
-                            <strong id="recordingStatus">
-                                Ready
-                            </strong>
+                        <div class="project-buttons">
+                            <button id="saveButton" class="button-primary" type="button">Save project</button>
+                            <button id="loadButton" type="button">Load project</button>
+                            <button id="deleteSaveButton" class="danger-button" type="button">Delete saved project</button>
                         </div>
-
-                        <div class="recording-dot"></div>
-
                     </div>
-
-
-                    <div class="recording-info">
-
-                        <span>
-                            Notes:
-                            <strong id="recordingNoteCount">
-                                0
-                            </strong>
-                        </span>
-
-                        <span>
-                            Length:
-                            <strong id="recordingDuration">
-                                0.0s
-                            </strong>
-                        </span>
-
-                    </div>
-
-
-                    <div
-                        id="recordingDisplay"
-                        class="recording-display"
-                    >
-                        No notes recorded
-                    </div>
-
-
-                    <div class="recording-controls">
-
-                        <button id="playRecordingButton">
-                            Play Recording
-                        </button>
-
-                        <button id="stopRecordingButton">
-                            Stop Playback
-                        </button>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- BASS -->
-
-            <section class="bass-section">
-
-                <div class="section-header">
-
-                    <div>
-                        <span class="eyebrow">Instrument</span>
-                        <h2>Bass</h2>
-                    </div>
-
-                    <p>
-                        Play low notes alongside the piano.
-                    </p>
-
-                </div>
-
-
-                <div class="bass-display">
-
-                    <span>Playing</span>
-
-                    <strong id="currentBassNote">
-                        —
-                    </strong>
-
-                </div>
-
-
-                <div class="bass-keyboard">
-
-                    <button class="bass-key" data-note="C2">C</button>
-                    <button class="bass-key" data-note="D2">D</button>
-                    <button class="bass-key" data-note="E2">E</button>
-                    <button class="bass-key" data-note="F2">F</button>
-                    <button class="bass-key" data-note="G2">G</button>
-                    <button class="bass-key" data-note="A2">A</button>
-                    <button class="bass-key" data-note="B2">B</button>
-                    <button class="bass-key" data-note="C3">C</button>
-
-                </div>
-
-            </section>
-
-
-            <!-- DRUM MACHINE -->
-
-            <section id="drums">
-
-                <div class="section-header">
-
-                    <div>
-                        <span class="eyebrow">Instrument</span>
-                        <h2>Drum Machine</h2>
-                    </div>
-
-                    <p>
-                        Create a 16-step rhythm.
-                    </p>
-
-                </div>
-
-
-                <div class="drum-controls">
-
-                    <button id="drumPlayButton">
-                        Play
-                    </button>
-
-                    <button id="drumStopButton">
-                        Stop
-                    </button>
-
-                    <button id="drumClearButton">
-                        Clear
-                    </button>
-
-
-                    <div class="drum-volume">
-
-                        <label for="drumVolume">
-                            Drum Volume
-                        </label>
-
-                        <input
-                            type="range"
-                            id="drumVolume"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value="0.35"
-                        >
-
-                        <span id="drumVolumeDisplay">
-                            35%
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <div class="drum-machine">
-
-                    <div class="step-number-row">
-
-                        <span></span>
-
-                        <span>1</span>
-                        <span>2</span>
-                        <span>3</span>
-                        <span>4</span>
-                        <span>5</span>
-                        <span>6</span>
-                        <span>7</span>
-                        <span>8</span>
-                        <span>9</span>
-                        <span>10</span>
-                        <span>11</span>
-                        <span>12</span>
-                        <span>13</span>
-                        <span>14</span>
-                        <span>15</span>
-                        <span>16</span>
-
-                    </div>
-
-
-                    <div class="drum-row">
-
-                        <span class="drum-name">
-                            Kick
-                        </span>
-
-                        <div class="steps">
-
-                            <button class="step" data-instrument="kick" data-step="1"></button>
-                            <button class="step" data-instrument="kick" data-step="2"></button>
-                            <button class="step" data-instrument="kick" data-step="3"></button>
-                            <button class="step" data-instrument="kick" data-step="4"></button>
-                            <button class="step" data-instrument="kick" data-step="5"></button>
-                            <button class="step" data-instrument="kick" data-step="6"></button>
-                            <button class="step" data-instrument="kick" data-step="7"></button>
-                            <button class="step" data-instrument="kick" data-step="8"></button>
-                            <button class="step" data-instrument="kick" data-step="9"></button>
-                            <button class="step" data-instrument="kick" data-step="10"></button>
-                            <button class="step" data-instrument="kick" data-step="11"></button>
-                            <button class="step" data-instrument="kick" data-step="12"></button>
-                            <button class="step" data-instrument="kick" data-step="13"></button>
-                            <button class="step" data-instrument="kick" data-step="14"></button>
-                            <button class="step" data-instrument="kick" data-step="15"></button>
-                            <button class="step" data-instrument="kick" data-step="16"></button>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="drum-row">
-
-                        <span class="drum-name">
-                            Snare
-                        </span>
-
-                        <div class="steps">
-
-                            <button class="step" data-instrument="snare" data-step="1"></button>
-                            <button class="step" data-instrument="snare" data-step="2"></button>
-                            <button class="step" data-instrument="snare" data-step="3"></button>
-                            <button class="step" data-instrument="snare" data-step="4"></button>
-                            <button class="step" data-instrument="snare" data-step="5"></button>
-                            <button class="step" data-instrument="snare" data-step="6"></button>
-                            <button class="step" data-instrument="snare" data-step="7"></button>
-                            <button class="step" data-instrument="snare" data-step="8"></button>
-                            <button class="step" data-instrument="snare" data-step="9"></button>
-                            <button class="step" data-instrument="snare" data-step="10"></button>
-                            <button class="step" data-instrument="snare" data-step="11"></button>
-                            <button class="step" data-instrument="snare" data-step="12"></button>
-                            <button class="step" data-instrument="snare" data-step="13"></button>
-                            <button class="step" data-instrument="snare" data-step="14"></button>
-                            <button class="step" data-instrument="snare" data-step="15"></button>
-                            <button class="step" data-instrument="snare" data-step="16"></button>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="drum-row">
-
-                        <span class="drum-name">
-                            Hi-Hat
-                        </span>
-
-                        <div class="steps">
-
-                            <button class="step" data-instrument="hihat" data-step="1"></button>
-                            <button class="step" data-instrument="hihat" data-step="2"></button>
-                            <button class="step" data-instrument="hihat" data-step="3"></button>
-                            <button class="step" data-instrument="hihat" data-step="4"></button>
-                            <button class="step" data-instrument="hihat" data-step="5"></button>
-                            <button class="step" data-instrument="hihat" data-step="6"></button>
-                            <button class="step" data-instrument="hihat" data-step="7"></button>
-                            <button class="step" data-instrument="hihat" data-step="8"></button>
-                            <button class="step" data-instrument="hihat" data-step="9"></button>
-                            <button class="step" data-instrument="hihat" data-step="10"></button>
-                            <button class="step" data-instrument="hihat" data-step="11"></button>
-                            <button class="step" data-instrument="hihat" data-step="12"></button>
-                            <button class="step" data-instrument="hihat" data-step="13"></button>
-                            <button class="step" data-instrument="hihat" data-step="14"></button>
-                            <button class="step" data-instrument="hihat" data-step="15"></button>
-                            <button class="step" data-instrument="hihat" data-step="16"></button>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </section>
-
-
-            <!-- CONTROLS -->
-
-            <section id="controls">
-
-                <div class="section-header">
-
-                    <div>
-                        <span class="eyebrow">Studio</span>
-                        <h2>Controls</h2>
-                    </div>
-
-                    <p>
-                        Adjust the tempo and studio settings.
-                    </p>
-
-                </div>
-
-
-                <div class="control-panel">
-
-                    <div class="beat-display">
-
-                        <span>Beat</span>
-
-                        <div class="beat-indicators">
-
-                            <span class="beat active"></span>
-                            <span class="beat"></span>
-                            <span class="beat"></span>
-                            <span class="beat"></span>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="tempo-control">
-
-                        <label for="bpm">
-                            Tempo
-                        </label>
-
-                        <div class="tempo-buttons">
-
-                            <button id="bpmDown">
-                                −
-                            </button>
-
-                            <input
-                                type="number"
-                                id="bpm"
-                                value="120"
-                                min="40"
-                                max="240"
-                            >
-
-                            <button id="bpmUp">
-                                +
-                            </button>
-
-                        </div>
-
-                        <span id="bpmDisplay">
-                            120 BPM
-                        </span>
-
-                    </div>
-
-
-                    <button id="metronomeButton">
-                        Metronome: Off
-                    </button>
-
-
-                    <button id="tapTempoButton">
-                        Tap Tempo
-                    </button>
-
-
-                    <div class="master-control">
-
-                        <label for="masterVolume">
-                            Master Volume
-                        </label>
-
-                        <input
-                            type="range"
-                            id="masterVolume"
-                            min="0"
-                            max="1"
-                            step="0.01"
-                            value="0.35"
-                        >
-
-                        <span id="masterVolumeDisplay">
-                            35%
-                        </span>
-
-                    </div>
-
-
-                    <button
-                        id="masterMuteButton"
-                        class="toggle-button"
-                    >
-                        Master Mute
-                    </button>
-
-
-                    <p id="tapTempoDisplay">
-                        0 taps
-                    </p>
-
-                </div>
-
-            </section>
-
-
-            <!-- PROJECT -->
-
-            <section class="project-section">
-
-                <div class="section-header">
-
-                    <div>
-                        <span class="eyebrow">Project</span>
-                        <h2>Project</h2>
-                    </div>
-
-                    <p id="saveStatus">
-                        Unsaved changes
-                    </p>
-
-                </div>
-
-
-                <div class="project-controls">
-
-                    <input
-                        id="projectName"
-                        type="text"
-                        placeholder="Project name"
-                        value="Untitled Groove"
-                    >
-
-                    <button id="saveButton">
-                        Save
-                    </button>
-
-                    <button id="loadButton">
-                        Load
-                    </button>
-
-                    <button id="deleteSaveButton">
-                        Delete Save
-                    </button>
-
-                </div>
-
-            </section>
-
+                    <p class="project-note">Your project is saved in this browser on this device. Exporting a portable project file is not included in this version.</p>
+                </section>
+            </div>
         </div>
+    </main>
 
-    </section>
-
-</main>
-
-
-<footer>
-
-    <p>
-        Groove Browser Music Studio — 1.8
-    </p>
-
-</footer>
-
-
-<script src="script.js"></script>
-
+    <footer class="app-footer">
+        <span class="footer-brand">GROOVE<span>.</span></span>
+        <span>Browser Music Studio</span>
+        <span class="footer-version">VERSION 2.0</span>
+    </footer>
+</div>
 </body>
-
 </html>
-
-
-
-
-
